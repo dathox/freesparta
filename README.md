@@ -41,9 +41,9 @@ FreeSparta - is a distribution/patch of the mature Lazarus/Typhon environment
 28. Click "Continue"
 29. Copy all files from "typhon_sparta_patch" into "C:\codetyphon\typhon"
 30. Delete all files from:
-   *"C:\codetyphon\typhon\units"
-   *"C:\codetyphon\typhon\components\BaseIdeintf\units"
-   *"C:\codetyphon\typhon\lcl\units"
+   * "C:\codetyphon\typhon\units"
+   * "C:\codetyphon\typhon\components\BaseIdeintf\units"
+   * "C:\codetyphon\typhon\lcl\units"
 31. Click "Tools → Build Typhon with Profile: Optimized IDE"
 32. Open and install package "1_spartaBasic\dtx_spartabasic.lpk"
 33. Open and install package "2_spartaStarter\dtx_spartastarter.lpk"
@@ -57,9 +57,9 @@ FreeSparta - is a distribution/patch of the mature Lazarus/Typhon environment
 2. Export SVN repo to C:\codetyphon\lazarus
 3. Copy all files from "lazarus_sparta_patch" into "C:\codetyphon\lazarus"
 4. Run in command line this script:
-   ```bat
+```bat
    START "" /D"C:\codetyphon\lazarus\" /B /WAIT "C:\codetyphon\fpc\fpc32\bin\i386-win32\make.exe" all OPT="-g-" INSTALL_PREFIX="C:\codetyphon\lazarus\"
-   ```
+```
 5. Run Lazarus "C:\codetyphon\lazarus\lazarus.exe"
 6. Open and install package "1_spartaBasic\dtx_spartabasic.lpk"
 7. Open and install package "2_spartaStarter\dtx_spartastarter.lpk"
