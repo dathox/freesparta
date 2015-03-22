@@ -1,0 +1,59 @@
+#   File generated automatically by Typhon Package Manager
+#
+#   Makefile.fpc for pl_bgracontrols 5.2.1
+#
+#   This file was generated on 11/1/2015
+
+[package]
+name=pl_bgracontrols
+version=5.2.1
+
+[compiler]
+unittargetdir=lib/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM)
+unitdir=source ../../packager/units/$(CPU_TARGET)-$(OS_TARGET) ../BaseUtils/lib/$(CPU_TARGET)-$(OS_TARGET) ../../lcl/units/$(CPU_TARGET)-$(OS_TARGET) ../../lcl/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) ../BaseControls/lib/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) ../pl_PascalScript/lib/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) ../BaseIdeintf/units/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) ../pl_BGRAbitmap/lib/$(CPU_TARGET)-$(OS_TARGET)/$(LCL_PLATFORM) .
+includedir=source
+options= -MObjFPC -Scghi -O1 -g -gl -l -vewnhibq -dLCL -dLCL$(LCL_PLATFORM)
+
+[target]
+units=pl_bgracontrols.pas
+
+[clean]
+files=$(wildcard $(COMPILER_UNITTARGETDIR)/*$(OEXT)) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*$(PPUEXT)) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*$(RSTEXT)) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*.lfm) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*.res) \
+      $(wildcard $(COMPILER_UNITTARGETDIR)/*.compiled) \
+      $(wildcard *$(OEXT)) $(wildcard *$(PPUEXT)) $(wildcard *$(RSTEXT))
+[prerules]
+# LCL Platform
+ifndef LCL_PLATFORM
+ifeq ($(OS_TARGET),win32)
+LCL_PLATFORM=win32
+else
+ifeq ($(OS_TARGET),win64)
+LCL_PLATFORM=win32
+else
+ifeq ($(OS_TARGET),darwin)
+LCL_PLATFORM=carbon
+else
+LCL_PLATFORM=gtk2
+endif
+endif
+endif
+endif
+export LCL_PLATFORM
+
+[rules]
+.PHONY: cleartarget compiled all
+
+cleartarget:
+        -$(DEL) $(COMPILER_UNITTARGETDIR)/pl_bgracontrols$(PPUEXT)
+
+compiled:
+        $(CPPROG) -f Makefile.compiled $(COMPILER_UNITTARGETDIR)/pl_bgracontrols.compiled
+
+all: cleartarget $(COMPILER_UNITTARGETDIR) pl_bgracontrols$(PPUEXT) compiled
+
+distclean: clean
+        ${DELTREE} lib/*

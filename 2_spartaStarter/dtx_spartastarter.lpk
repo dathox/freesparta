@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="dtx_SpartaStarter"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="source"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)\$(LCLWidgetType)"/>
+      </SearchPaths>
+      <Other>
+        <CompilerMessages>
+          <MsgFileName Value=""/>
+        </CompilerMessages>
+        <CompilerPath Value="$(CompPath)"/>
+      </Other>
+    </CompilerOptions>
+    <Files Count="4">
+      <Item1>
+        <Filename Value="source\dtx_sparta_starterregister.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="dtx_sparta_StarterRegister"/>
+      </Item1>
+      <Item2>
+        <Filename Value="source\sparta_fakeformbackground.pas"/>
+        <UnitName Value="sparta_FakeFormBackground"/>
+      </Item2>
+      <Item3>
+        <Filename Value="source\sparta_fakeformbg.pas"/>
+        <UnitName Value="sparta_fakeformbg"/>
+      </Item3>
+      <Item4>
+        <Filename Value="source\sparta_edtu_main.pas"/>
+        <UnitName Value="sparta_EDTU_Main"/>
+      </Item4>
+    </Files>
+    <Type Value="RunAndDesignTime"/>
+    <RequiredPkgs Count="1">
+      <Item1>
+        <PackageName Value="dtx_SpartaBasic"/>
+      </Item1>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+  </Package>
+</CONFIG>

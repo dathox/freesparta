@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CONFIG>
+  <Settings HeaderColor="536870912"/>
+  <MainConfig>
+    <Nodes ChildCount="4">
+      <Item1 Name="MainIDE" Type="CustomSite">
+        <Bounds Top="28" Left="1" Width="1200" Height="105">
+          <WorkArea>
+            <Rect Top="24" Right="1440" Bottom="1026"/>
+          </WorkArea>
+        </Bounds>
+      </Item1>
+      <Item2 Name="SourceNotebook" Type="Control">
+        <Bounds Top="176" Left="271" Width="928" Height="581">
+          <WorkArea>
+            <Rect Top="24" Right="1440" Bottom="1026"/>
+          </WorkArea>
+        </Bounds>
+      </Item2>
+      <Item3 Name="ObjectInspectorDlg" Type="Control">
+        <Bounds Top="176" Left="1" Width="255" Height="708">
+          <WorkArea>
+            <Rect Top="24" Right="1440" Bottom="1026"/>
+          </WorkArea>
+        </Bounds>
+      </Item3>
+      <Item4 Name="MessagesView" Type="Control">
+        <Bounds Top="796" Left="270" Width="927" Height="90">
+          <WorkArea>
+            <Rect Top="24" Right="1440" Bottom="1026"/>
+          </WorkArea>
+        </Bounds>
+      </Item4>
+    </Nodes>
+  </MainConfig>
+</CONFIG>

@@ -1,0 +1,1367 @@
+object edtuAnchorEditor: TedtuAnchorEditor
+  Left = 0
+  Height = 700
+  Top = 0
+  Width = 256
+  HorzScrollBar.Page = 256
+  VertScrollBar.Page = 700
+  Align = alClient
+  AutoScroll = True
+  ClientHeight = 700
+  ClientWidth = 256
+  TabOrder = 0
+  object pConstraints: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = cbVisible
+    AnchorSideTop.Side = asrBottom
+    Left = 3
+    Height = 40
+    Top = 19
+    Width = 250
+    BorderSpacing.Left = 3
+    BevelOuter = bvNone
+    ClientHeight = 40
+    ClientWidth = 250
+    Constraints.MinHeight = 40
+    TabOrder = 0
+    object eConstraintsWidth: TSpinEdit
+      Left = 61
+      Height = 23
+      Top = 16
+      Width = 56
+      MaxValue = 2147483647
+      OnChange = eConstraintsWidthChange
+      TabOrder = 0
+    end
+    object Label1: TLabel
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 75
+      Align = alCustom
+      BorderSpacing.Right = 6
+      Caption = '1. Constraints'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object Label2: TLabel
+      AnchorSideTop.Control = eConstraintsWidth
+      AnchorSideRight.Control = eConstraintsWidth
+      Left = 26
+      Height = 15
+      Top = 19
+      Width = 32
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Width'
+      ParentColor = False
+    end
+    object eConstraintsHeight: TSpinEdit
+      Left = 165
+      Height = 23
+      Top = 16
+      Width = 56
+      MaxValue = 2147483647
+      OnChange = eConstraintsWidthChange
+      TabOrder = 1
+    end
+    object Label3: TLabel
+      AnchorSideTop.Control = eConstraintsHeight
+      AnchorSideRight.Control = eConstraintsHeight
+      Left = 126
+      Height = 15
+      Top = 19
+      Width = 36
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Height'
+      ParentColor = False
+    end
+    object Label4: TLabel
+      AnchorSideTop.Control = eConstraintsMaxWidth
+      AnchorSideRight.Control = eConstraintsMaxWidth
+      Left = 12
+      Height = 15
+      Top = 75
+      Width = 54
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'MaxWidth'
+      ParentColor = False
+    end
+    object eConstraintsMaxWidth: TEdit
+      Left = 69
+      Height = 23
+      Top = 72
+      Width = 56
+      OnEditingDone = eConstraintsMinWidthChange
+      TabOrder = 2
+    end
+    object Label5: TLabel
+      AnchorSideTop.Control = eConstraintsMaxHeight
+      AnchorSideRight.Control = eConstraintsMaxHeight
+      Left = 128
+      Height = 15
+      Top = 75
+      Width = 58
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'MaxHeight'
+      ParentColor = False
+    end
+    object eConstraintsMaxHeight: TEdit
+      Left = 189
+      Height = 23
+      Top = 72
+      Width = 56
+      OnEditingDone = eConstraintsMinWidthChange
+      TabOrder = 3
+    end
+    object Label6: TLabel
+      AnchorSideTop.Control = eConstraintsMinWidth
+      AnchorSideRight.Control = eConstraintsMinWidth
+      Left = 13
+      Height = 15
+      Top = 46
+      Width = 53
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'MinWidth'
+      ParentColor = False
+    end
+    object eConstraintsMinWidth: TEdit
+      Left = 69
+      Height = 23
+      Top = 43
+      Width = 56
+      OnEditingDone = eConstraintsMinWidthChange
+      TabOrder = 4
+    end
+    object Label7: TLabel
+      AnchorSideTop.Control = eConstraintsMinHeight
+      AnchorSideRight.Control = eConstraintsMinHeight
+      Left = 129
+      Height = 15
+      Top = 46
+      Width = 57
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'MinHeight'
+      ParentColor = False
+    end
+    object eConstraintsMinHeight: TEdit
+      Left = 189
+      Height = 23
+      Top = 43
+      Width = 56
+      OnEditingDone = eConstraintsMinWidthChange
+      TabOrder = 5
+    end
+    object sbShowMinMax: TSpeedButton
+      Left = 227
+      Height = 22
+      Top = 16
+      Width = 23
+      OnClick = sbShowMinMaxClick
+    end
+    object Label11: TLabel
+      AnchorSideLeft.Control = Label1
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Label1
+      AnchorSideRight.Control = Label3
+      Left = 81
+      Height = 15
+      Top = 0
+      Width = 69
+      Caption = 'Min and Max'
+      ParentColor = False
+    end
+    object sbDefaultMinMaxValues: TSpeedButton
+      Left = 0
+      Height = 22
+      Top = 16
+      Width = 23
+      OnClick = sbDefaultMinMaxValuesClick
+    end
+  end
+  object pAlign: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = pConstraints
+    AnchorSideTop.Side = asrBottom
+    Left = 3
+    Height = 42
+    Top = 59
+    Width = 250
+    BorderSpacing.Left = 3
+    BevelOuter = bvNone
+    ClientHeight = 42
+    ClientWidth = 250
+    TabOrder = 1
+    object Label8: TLabel
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 250
+      Align = alTop
+      Caption = '2. Align'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbAlign: TComboBox
+      Left = 0
+      Height = 23
+      Top = 17
+      Width = 250
+      Align = alTop
+      BorderSpacing.Top = 2
+      ItemHeight = 15
+      OnEditingDone = cbAlignEditingDone
+      Sorted = True
+      TabOrder = 0
+    end
+  end
+  object pAnchors: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = pAlign
+    AnchorSideTop.Side = asrBottom
+    Left = 3
+    Height = 294
+    Top = 101
+    Width = 250
+    BorderSpacing.Left = 3
+    BevelOuter = bvNone
+    ClientHeight = 294
+    ClientWidth = 250
+    TabOrder = 2
+    object Label9: TLabel
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 250
+      Align = alTop
+      Caption = '3. Anchors'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbTopEnabled: TCheckBox
+      Left = 0
+      Height = 19
+      Top = 62
+      Width = 41
+      Caption = 'Top'
+      OnEditingDone = cbLeftEnabledEditingDone
+      TabOrder = 0
+    end
+    object cbAnchorSideTopCtrl: TComboBox
+      AnchorSideLeft.Control = pAnchors
+      AnchorSideRight.Control = pAnchors
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 86
+      Width = 250
+      Anchors = [akTop, akLeft, akRight]
+      ItemHeight = 15
+      OnEditingDone = cbAnchorSideLeftCtrlEditingDone
+      TabOrder = 1
+      Text = 'cbAnchorSideTopCtrl'
+    end
+    object cbAnchorSideLeftCtrl: TComboBox
+      AnchorSideLeft.Control = pAnchors
+      AnchorSideRight.Control = pAnchors
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 38
+      Width = 250
+      Anchors = [akTop, akLeft, akRight]
+      ItemHeight = 15
+      OnEditingDone = cbAnchorSideLeftCtrlEditingDone
+      TabOrder = 2
+      Text = 'cbAnchorSideLeftCtrl'
+    end
+    object cbLeftEnabled: TCheckBox
+      Left = 0
+      Height = 19
+      Top = 14
+      Width = 40
+      Caption = 'Left'
+      OnEditingDone = cbLeftEnabledEditingDone
+      TabOrder = 3
+    end
+    object cbRightEnabled: TCheckBox
+      Left = 0
+      Height = 19
+      Top = 111
+      Width = 48
+      Caption = 'Right'
+      OnEditingDone = cbLeftEnabledEditingDone
+      TabOrder = 4
+    end
+    object cbAnchorSideRightCtrl: TComboBox
+      AnchorSideLeft.Control = pAnchors
+      AnchorSideRight.Control = pAnchors
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 134
+      Width = 250
+      Anchors = [akTop, akLeft, akRight]
+      ItemHeight = 15
+      OnEditingDone = cbAnchorSideLeftCtrlEditingDone
+      TabOrder = 5
+      Text = 'cbAnchorSideRightCtrl'
+    end
+    object cbBottomEnabled: TCheckBox
+      Left = 0
+      Height = 19
+      Top = 158
+      Width = 60
+      Caption = 'Bottom'
+      OnEditingDone = cbLeftEnabledEditingDone
+      TabOrder = 6
+    end
+    object cbAnchorSideBottomCtrl: TComboBox
+      AnchorSideLeft.Control = pAnchors
+      AnchorSideRight.Control = pAnchors
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 23
+      Top = 182
+      Width = 250
+      Anchors = [akTop, akLeft, akRight]
+      ItemHeight = 15
+      OnEditingDone = cbAnchorSideLeftCtrlEditingDone
+      TabOrder = 7
+      Text = 'cbAnchorSideBottomCtrl'
+    end
+    object GroupBox1: TGroupBox
+      Left = 0
+      Height = 88
+      Top = 206
+      Width = 130
+      Caption = ' Border space '
+      ClientHeight = 70
+      ClientWidth = 126
+      ParentBidiMode = False
+      TabOrder = 8
+      object seBSAround: TSpinEdit
+        Left = 43
+        Height = 23
+        Top = 23
+        Width = 40
+        MaxValue = 2147483647
+        OnChange = seBSLeftChange
+        TabOrder = 0
+      end
+      object seBSTop: TSpinEdit
+        AnchorSideLeft.Control = seBSAround
+        AnchorSideRight.Control = seBSAround
+        AnchorSideRight.Side = asrBottom
+        AnchorSideBottom.Control = seBSAround
+        Left = 43
+        Height = 23
+        Top = 0
+        Width = 40
+        Anchors = [akLeft, akRight, akBottom]
+        MaxValue = 2147483647
+        OnChange = seBSLeftChange
+        TabOrder = 1
+      end
+      object seBSRight: TSpinEdit
+        AnchorSideLeft.Control = seBSAround
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = seBSAround
+        AnchorSideBottom.Control = seBSAround
+        AnchorSideBottom.Side = asrBottom
+        Left = 83
+        Height = 23
+        Top = 23
+        Width = 40
+        Anchors = [akTop, akLeft, akBottom]
+        MaxValue = 2147483647
+        OnChange = seBSLeftChange
+        TabOrder = 2
+      end
+      object seBSBottom: TSpinEdit
+        AnchorSideLeft.Control = seBSAround
+        AnchorSideTop.Control = seBSAround
+        AnchorSideTop.Side = asrBottom
+        AnchorSideRight.Control = seBSAround
+        AnchorSideRight.Side = asrBottom
+        Left = 43
+        Height = 23
+        Top = 46
+        Width = 40
+        Anchors = [akTop, akLeft, akRight]
+        MaxValue = 2147483647
+        OnChange = seBSLeftChange
+        TabOrder = 3
+      end
+      object seBSLeft: TSpinEdit
+        AnchorSideTop.Control = seBSAround
+        AnchorSideRight.Control = seBSAround
+        AnchorSideBottom.Control = seBSAround
+        AnchorSideBottom.Side = asrBottom
+        Left = 3
+        Height = 23
+        Top = 23
+        Width = 40
+        Anchors = [akTop, akRight, akBottom]
+        MaxValue = 2147483647
+        OnChange = seBSLeftChange
+        TabOrder = 4
+      end
+    end
+    object sbHCellCenter: TSpeedButton
+      Left = 132
+      Height = 22
+      Top = 230
+      Width = 23
+      BorderSpacing.Top = 1
+      GroupIndex = 5
+      OnClick = sbHCellFillClick
+    end
+    object sbHCellFill: TSpeedButton
+      AnchorSideLeft.Control = sbHCellCenter
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbHCellCenter
+      Left = 155
+      Height = 22
+      Top = 230
+      Width = 23
+      GroupIndex = 5
+      OnClick = sbHCellFillClick
+    end
+    object sbHCellLeftTop: TSpeedButton
+      AnchorSideLeft.Control = sbHCellFill
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbHCellFill
+      Left = 178
+      Height = 22
+      Top = 230
+      Width = 23
+      GroupIndex = 5
+      OnClick = sbHCellFillClick
+    end
+    object sbHCellRightBottom: TSpeedButton
+      AnchorSideLeft.Control = sbHCellLeftTop
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbHCellLeftTop
+      Left = 201
+      Height = 22
+      Top = 230
+      Width = 23
+      BorderSpacing.Right = 5
+      GroupIndex = 5
+      OnClick = sbHCellFillClick
+    end
+    object Label19: TLabel
+      AnchorSideLeft.Control = sbHCellCenter
+      AnchorSideBottom.Control = sbHCellCenter
+      Left = 132
+      Height = 15
+      Top = 214
+      Width = 105
+      Anchors = [akLeft, akBottom]
+      Caption = 'Cell align horizontal'
+      ParentColor = False
+    end
+    object sbVCellCenter: TSpeedButton
+      Left = 132
+      Height = 22
+      Top = 270
+      Width = 23
+      BorderSpacing.Top = 1
+      GroupIndex = 6
+      OnClick = sbHCellFillClick
+    end
+    object sbVCellFill: TSpeedButton
+      AnchorSideLeft.Control = sbVCellCenter
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbVCellCenter
+      Left = 155
+      Height = 22
+      Top = 270
+      Width = 23
+      GroupIndex = 6
+      OnClick = sbHCellFillClick
+    end
+    object sbVCellLeftTop: TSpeedButton
+      AnchorSideLeft.Control = sbVCellFill
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbVCellFill
+      Left = 178
+      Height = 22
+      Top = 270
+      Width = 23
+      GroupIndex = 6
+      OnClick = sbHCellFillClick
+    end
+    object sbVCellRightBottom: TSpeedButton
+      AnchorSideLeft.Control = sbVCellLeftTop
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbVCellLeftTop
+      Left = 201
+      Height = 22
+      Top = 270
+      Width = 23
+      BorderSpacing.Right = 5
+      GroupIndex = 6
+      OnClick = sbHCellFillClick
+    end
+    object Label21: TLabel
+      AnchorSideLeft.Control = sbVCellCenter
+      AnchorSideBottom.Control = sbVCellCenter
+      Left = 132
+      Height = 15
+      Top = 254
+      Width = 90
+      Anchors = [akLeft, akBottom]
+      Caption = 'Cell align vertical'
+      ParentColor = False
+    end
+    object sbLeftSideCenter: TSpeedButton
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Side = asrBottom
+      Left = 227
+      Height = 22
+      Top = 14
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 1
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbLeftSideRight: TSpeedButton
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbLeftSideCenter
+      AnchorSideRight.Control = sbLeftSideCenter
+      Left = 204
+      Height = 22
+      Top = 14
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 1
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbLeftSideLeft: TSpeedButton
+      AnchorSideTop.Control = sbLeftSideCenter
+      AnchorSideRight.Control = sbLeftSideRight
+      Left = 181
+      Height = 22
+      Top = 14
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 1
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbTopSideTop: TSpeedButton
+      AnchorSideTop.Control = sbTopSideCenter
+      AnchorSideRight.Control = sbTopSideBottom
+      AnchorSideBottom.Side = asrBottom
+      Left = 181
+      Height = 22
+      Top = 62
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 2
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbTopSideBottom: TSpeedButton
+      AnchorSideTop.Control = sbTopSideCenter
+      AnchorSideRight.Control = sbTopSideCenter
+      AnchorSideBottom.Side = asrBottom
+      Left = 204
+      Height = 22
+      Top = 62
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 2
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbTopSideCenter: TSpeedButton
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Side = asrBottom
+      Left = 227
+      Height = 22
+      Top = 62
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 2
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbRightSideCenter: TSpeedButton
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Side = asrBottom
+      Left = 227
+      Height = 22
+      Top = 111
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akRight, akBottom]
+      GroupIndex = 3
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbRightSideRight: TSpeedButton
+      AnchorSideTop.Control = sbRightSideCenter
+      AnchorSideRight.Control = sbRightSideCenter
+      AnchorSideBottom.Side = asrBottom
+      Left = 204
+      Height = 22
+      Top = 111
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 3
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbRightSideLeft: TSpeedButton
+      AnchorSideTop.Control = sbRightSideCenter
+      AnchorSideRight.Control = sbRightSideRight
+      AnchorSideBottom.Side = asrBottom
+      Left = 181
+      Height = 22
+      Top = 111
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 3
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbBottomSideTop: TSpeedButton
+      AnchorSideTop.Control = sbBottomSideCenter
+      AnchorSideRight.Control = sbBottomSideBottom
+      AnchorSideBottom.Side = asrBottom
+      Left = 181
+      Height = 22
+      Top = 158
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 4
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbBottomSideBottom: TSpeedButton
+      AnchorSideTop.Control = sbBottomSideCenter
+      AnchorSideRight.Control = sbBottomSideCenter
+      AnchorSideBottom.Side = asrBottom
+      Left = 204
+      Height = 22
+      Top = 158
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akTop, akRight]
+      GroupIndex = 4
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+    object sbBottomSideCenter: TSpeedButton
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Side = asrBottom
+      Left = 227
+      Height = 22
+      Top = 158
+      Width = 23
+      AllowAllUp = True
+      Anchors = [akRight, akBottom]
+      GroupIndex = 4
+      Transparent = False
+      OnClick = sbLeftSideCenterClick
+      ShowHint = True
+      ParentShowHint = False
+    end
+  end
+  object lLayoutFor: TLabel
+    AnchorSideLeft.Control = cbVisible
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = cbVisible
+    AnchorSideTop.Side = asrCenter
+    Left = 57
+    Height = 15
+    Top = 2
+    Width = 60
+    Caption = 'Layout for '
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object pChildSizing: TPanel
+    AnchorSideTop.Control = pAnchors
+    AnchorSideTop.Side = asrBottom
+    Left = 3
+    Height = 192
+    Top = 395
+    Width = 250
+    BevelOuter = bvNone
+    ClientHeight = 192
+    ClientWidth = 250
+    TabOrder = 3
+    object Label12: TLabel
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 250
+      Align = alTop
+      Caption = '4. Child Sizing'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object seControlsPerLine: TSpinEdit
+      Left = 117
+      Height = 23
+      Top = 16
+      Width = 54
+      MaxValue = 2147483647
+      OnChange = seControlsPerLineChange
+      TabOrder = 0
+    end
+    object Label22: TLabel
+      AnchorSideTop.Control = seControlsPerLine
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = seControlsPerLine
+      AnchorSideRight.Side = asrCenter
+      AnchorSideBottom.Control = seControlsPerLine
+      Left = 100
+      Height = 15
+      Top = 1
+      Width = 87
+      Anchors = [akRight, akBottom]
+      Caption = 'Controls per line'
+      ParentColor = False
+    end
+    object sbLayoutLeftToRightThenTopToBottom: TSpeedButton
+      Left = 45
+      Height = 22
+      Top = 17
+      Width = 23
+      GroupIndex = 7
+      Transparent = False
+      OnClick = sbLayoutNoneClick
+    end
+    object sbLayoutNone: TSpeedButton
+      AnchorSideLeft.Control = sbLayoutLeftToRightThenTopToBottom
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbLayoutLeftToRightThenTopToBottom
+      Left = 68
+      Height = 22
+      Top = 17
+      Width = 23
+      GroupIndex = 7
+      Transparent = False
+      OnClick = sbLayoutNoneClick
+    end
+    object sbLayoutTopToBottomThenLeftToRight: TSpeedButton
+      AnchorSideLeft.Control = sbLayoutNone
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = sbLayoutLeftToRightThenTopToBottom
+      Left = 91
+      Height = 22
+      Top = 17
+      Width = 23
+      GroupIndex = 7
+      Transparent = False
+      OnClick = sbLayoutNoneClick
+    end
+    object Label23: TLabel
+      AnchorSideTop.Control = sbLayoutLeftToRightThenTopToBottom
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Control = sbLayoutLeftToRightThenTopToBottom
+      Left = 6
+      Height = 15
+      Top = 21
+      Width = 36
+      Anchors = [akTop, akRight]
+      BorderSpacing.Right = 3
+      Caption = 'Layout'
+      ParentColor = False
+    end
+    object GroupBox2: TGroupBox
+      Left = 2
+      Height = 73
+      Top = 40
+      Width = 249
+      Caption = ' Spacing '
+      ClientHeight = 55
+      ClientWidth = 245
+      TabOrder = 1
+      object seCSHorizontal: TSpinEdit
+        Left = 65
+        Height = 23
+        Top = 0
+        Width = 50
+        MaxValue = 2147483647
+        OnChange = seCSLeftRightChange
+        TabOrder = 0
+      end
+      object Label24: TLabel
+        AnchorSideTop.Control = seCSHorizontal
+        AnchorSideTop.Side = asrCenter
+        AnchorSideRight.Control = seCSHorizontal
+        Left = 7
+        Height = 15
+        Top = 4
+        Width = 55
+        Anchors = [akTop, akRight]
+        BorderSpacing.Right = 3
+        Caption = 'Horizontal'
+        ParentColor = False
+      end
+      object seCSVertical: TSpinEdit
+        Left = 187
+        Height = 23
+        Top = 0
+        Width = 50
+        MaxValue = 2147483647
+        OnChange = seCSLeftRightChange
+        TabOrder = 1
+      end
+      object Label25: TLabel
+        AnchorSideTop.Control = seCSVertical
+        AnchorSideTop.Side = asrCenter
+        AnchorSideRight.Control = seCSVertical
+        Left = 145
+        Height = 15
+        Top = 4
+        Width = 39
+        Anchors = [akTop, akRight]
+        BorderSpacing.Right = 3
+        Caption = 'Vertical'
+        ParentColor = False
+      end
+      object Label26: TLabel
+        AnchorSideTop.Control = seCSTopBottom
+        AnchorSideTop.Side = asrCenter
+        AnchorSideRight.Control = seCSTopBottom
+        Left = 118
+        Height = 15
+        Top = 32
+        Width = 66
+        Anchors = [akTop, akRight]
+        BorderSpacing.Right = 3
+        Caption = 'Top/Bottom'
+        ParentColor = False
+      end
+      object seCSTopBottom: TSpinEdit
+        Left = 187
+        Height = 23
+        Top = 28
+        Width = 50
+        MaxValue = 2147483647
+        OnChange = seCSLeftRightChange
+        TabOrder = 2
+      end
+      object seCSLeftRight: TSpinEdit
+        Left = 65
+        Height = 23
+        Top = 28
+        Width = 50
+        MaxValue = 2147483647
+        OnChange = seCSLeftRightChange
+        TabOrder = 3
+      end
+      object Label27: TLabel
+        AnchorSideTop.Control = seCSLeftRight
+        AnchorSideTop.Side = asrCenter
+        AnchorSideRight.Control = seCSLeftRight
+        Left = 9
+        Height = 15
+        Top = 32
+        Width = 53
+        Anchors = [akTop, akRight]
+        BorderSpacing.Right = 3
+        Caption = 'Left/Right'
+        ParentColor = False
+      end
+    end
+    object bEditTable: TSpeedButton
+      Left = 173
+      Height = 22
+      Top = 17
+      Width = 77
+      Caption = 'Edit table'
+      OnClick = bEditTableClick
+    end
+    object sbShowEnlargeShrink: TSpeedButton
+      Left = 227
+      Height = 22
+      Top = 120
+      Width = 23
+      Visible = False
+      OnClick = sbShowEnlargeShrinkClick
+    end
+    object pEnlargeShrink: TPanel
+      Left = 6
+      Height = 82
+      Top = 114
+      Width = 219
+      BevelOuter = bvNone
+      ClientHeight = 82
+      ClientWidth = 219
+      TabOrder = 2
+      object sbEHAnchorAligning: TSpeedButton
+        Left = 5
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 8
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbEHHomogenousChildResize: TSpeedButton
+        AnchorSideLeft.Control = sbEHAnchorAligning
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbEHAnchorAligning
+        Left = 28
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 8
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbEHHomogenousSpaceResize: TSpeedButton
+        AnchorSideLeft.Control = sbEHHomogenousChildResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbEHAnchorAligning
+        Left = 51
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 8
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbEHScaleChilds: TSpeedButton
+        AnchorSideLeft.Control = sbEHHomogenousSpaceResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbEHHomogenousSpaceResize
+        Left = 74
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 8
+        OnClick = sbEHAnchorAligningClick
+      end
+      object Label28: TLabel
+        AnchorSideLeft.Control = sbEHAnchorAligning
+        AnchorSideTop.Control = sbEHAnchorAligning
+        AnchorSideRight.Control = sbEHAnchorAligning
+        AnchorSideBottom.Control = sbEHAnchorAligning
+        Left = 5
+        Height = 15
+        Top = -2
+        Width = 95
+        Anchors = [akLeft, akBottom]
+        BorderSpacing.Right = 3
+        Caption = 'Enlarge horizontal'
+        ParentColor = False
+      end
+      object Label29: TLabel
+        AnchorSideLeft.Control = sbEVAnchorAligning
+        AnchorSideTop.Control = sbEVAnchorAligning
+        AnchorSideRight.Control = sbEVAnchorAligning
+        AnchorSideBottom.Control = sbEVAnchorAligning
+        Left = 116
+        Height = 15
+        Top = -2
+        Width = 80
+        Anchors = [akLeft, akBottom]
+        BorderSpacing.Right = 3
+        Caption = 'Enlarge vertical'
+        ParentColor = False
+      end
+      object sbEVAnchorAligning: TSpeedButton
+        Left = 116
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 9
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbEVHomogenousChildResize: TSpeedButton
+        AnchorSideLeft.Control = sbEVAnchorAligning
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbEVAnchorAligning
+        Left = 139
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 9
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbEVHomogenousSpaceResize: TSpeedButton
+        AnchorSideLeft.Control = sbEVHomogenousChildResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbEVAnchorAligning
+        Left = 162
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 9
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbEVScaleChilds: TSpeedButton
+        AnchorSideLeft.Control = sbEVHomogenousSpaceResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbEVHomogenousSpaceResize
+        Left = 185
+        Height = 22
+        Top = 13
+        Width = 23
+        GroupIndex = 9
+        OnClick = sbEHAnchorAligningClick
+      end
+      object Label31: TLabel
+        AnchorSideLeft.Control = sbSVAnchorAligning
+        AnchorSideTop.Control = sbSVAnchorAligning
+        AnchorSideRight.Control = sbSVAnchorAligning
+        AnchorSideBottom.Control = sbSVAnchorAligning
+        Left = 116
+        Height = 15
+        Top = 38
+        Width = 74
+        Anchors = [akLeft, akBottom]
+        BorderSpacing.Right = 3
+        Caption = 'Shrink vertical'
+        ParentColor = False
+      end
+      object Label30: TLabel
+        AnchorSideLeft.Control = sbSHAnchorAligning
+        AnchorSideTop.Control = sbSHAnchorAligning
+        AnchorSideRight.Control = sbSHAnchorAligning
+        AnchorSideBottom.Control = sbSHAnchorAligning
+        Left = 5
+        Height = 15
+        Top = 38
+        Width = 89
+        Anchors = [akLeft, akBottom]
+        BorderSpacing.Right = 3
+        Caption = 'Shrink horizontal'
+        ParentColor = False
+      end
+      object sbSHAnchorAligning: TSpeedButton
+        Left = 5
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 10
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSHHomogenousChildResize: TSpeedButton
+        AnchorSideLeft.Control = sbSHAnchorAligning
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbSHAnchorAligning
+        Left = 28
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 10
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSHHomogenousSpaceResize: TSpeedButton
+        AnchorSideLeft.Control = sbSHHomogenousChildResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbSHAnchorAligning
+        Left = 51
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 10
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSHScaleChilds: TSpeedButton
+        AnchorSideLeft.Control = sbSHHomogenousSpaceResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbSHHomogenousSpaceResize
+        Left = 74
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 10
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSVAnchorAligning: TSpeedButton
+        Left = 116
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 11
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSVHomogenousChildResize: TSpeedButton
+        AnchorSideLeft.Control = sbSVAnchorAligning
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbSVAnchorAligning
+        Left = 139
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 11
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSVHomogenousSpaceResize: TSpeedButton
+        AnchorSideLeft.Control = sbSVHomogenousChildResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbSVAnchorAligning
+        Left = 162
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 11
+        OnClick = sbEHAnchorAligningClick
+      end
+      object sbSVScaleChilds: TSpeedButton
+        AnchorSideLeft.Control = sbSVHomogenousSpaceResize
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = sbSVHomogenousSpaceResize
+        Left = 185
+        Height = 22
+        Top = 53
+        Width = 23
+        GroupIndex = 11
+        OnClick = sbEHAnchorAligningClick
+      end
+    end
+  end
+  object pAutoSize: TPanel
+    AnchorSideTop.Control = pChildSizing
+    AnchorSideTop.Side = asrBottom
+    Left = 3
+    Height = 40
+    Top = 587
+    Width = 250
+    BevelOuter = bvNone
+    ClientHeight = 40
+    ClientWidth = 250
+    TabOrder = 4
+    object Label13: TLabel
+      AnchorSideTop.Control = cbAutoSize
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 13
+      BorderSpacing.Top = 2
+      Caption = '5. '
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object cbAutoSize: TCheckBox
+      Left = 13
+      Height = 19
+      Top = -2
+      Width = 73
+      Caption = 'Auto Size'
+      Font.Style = [fsBold]
+      OnEditingDone = cbAutoSizeEditingDone
+      ParentFont = False
+      TabOrder = 0
+    end
+    object Label20: TLabel
+      AnchorSideTop.Control = seBSInner
+      AnchorSideRight.Control = seBSInner
+      AnchorSideRight.Side = asrCenter
+      AnchorSideBottom.Control = seBSInner
+      Left = 166
+      Height = 15
+      Top = -1
+      Width = 71
+      Anchors = [akRight, akBottom]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Inner border: '
+      ParentColor = False
+    end
+    object seBSInner: TSpinEdit
+      Left = 177
+      Height = 23
+      Top = 14
+      Width = 50
+      OnChange = seBSLeftChange
+      TabOrder = 1
+    end
+  end
+  object pBounds: TPanel
+    AnchorSideTop.Control = pAutoSize
+    AnchorSideTop.Side = asrBottom
+    Left = 3
+    Height = 68
+    Top = 627
+    Width = 250
+    BevelOuter = bvNone
+    ClientHeight = 68
+    ClientWidth = 250
+    TabOrder = 5
+    object eLeft: TSpinEdit
+      Left = 37
+      Height = 23
+      Top = 17
+      Width = 74
+      MaxValue = 2147483647
+      MinValue = -2147483648
+      OnChange = eLeftChange
+      TabOrder = 0
+    end
+    object eTop: TSpinEdit
+      AnchorSideRight.Control = eLeft
+      Left = 165
+      Height = 23
+      Top = 17
+      Width = 74
+      MaxValue = 2147483647
+      MinValue = -2147483648
+      OnChange = eLeftChange
+      TabOrder = 1
+    end
+    object eHeight: TSpinEdit
+      Left = 165
+      Height = 23
+      Top = 44
+      Width = 74
+      MaxValue = 2147483647
+      OnChange = eLeftChange
+      TabOrder = 2
+    end
+    object eWidth: TSpinEdit
+      Left = 37
+      Height = 23
+      Top = 44
+      Width = 74
+      MaxValue = 2147483647
+      OnChange = eLeftChange
+      TabOrder = 3
+    end
+    object Label14: TLabel
+      Left = 0
+      Height = 15
+      Top = 0
+      Width = 250
+      Align = alTop
+      Caption = '6. Bounds'
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+    end
+    object Label15: TLabel
+      AnchorSideLeft.Control = eLeft
+      AnchorSideTop.Control = eLeft
+      AnchorSideRight.Control = eLeft
+      Left = 14
+      Height = 15
+      Top = 20
+      Width = 20
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Left'
+      ParentColor = False
+    end
+    object Label16: TLabel
+      AnchorSideTop.Control = eTop
+      AnchorSideRight.Control = eTop
+      Left = 141
+      Height = 15
+      Top = 20
+      Width = 21
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Top'
+      ParentColor = False
+    end
+    object Label17: TLabel
+      AnchorSideTop.Control = eHeight
+      AnchorSideRight.Control = eHeight
+      Left = 126
+      Height = 15
+      Top = 47
+      Width = 36
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Height'
+      ParentColor = False
+    end
+    object Label18: TLabel
+      AnchorSideTop.Control = eWidth
+      AnchorSideRight.Control = eWidth
+      Left = 2
+      Height = 15
+      Top = 47
+      Width = 32
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Width'
+      ParentColor = False
+    end
+  end
+  object cbVisible: TCheckBox
+    AnchorSideTop.Control = Owner
+    Left = 3
+    Height = 19
+    Top = 0
+    Width = 54
+    Caption = 'Visible'
+    OnEditingDone = cbVisibleEditingDone
+    TabOrder = 6
+  end
+  object lCtrlName: TLabel
+    AnchorSideLeft.Control = lLayoutFor
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = lLayoutFor
+    Left = 117
+    Height = 15
+    Top = 2
+    Width = 54
+    Caption = 'lCtrlName'
+    ParentColor = False
+  end
+end

@@ -1,0 +1,15 @@
+{$IFDEF CPUI386}
+  {$DEFINE BGRASSE_AVAILABLE}
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}  // ct9999 for CodeTyphon Studio
+  {$IFDEF cpux86_64}
+    {$DEFINE BGRASSE_AVAILABLE}
+  {$ENDIF}
+{$ENDIF}
+
+{$IFDEF UNIX}  // ct9999 for CodeTyphon Studio
+  {$IFDEF cpux86_64}
+    {$ASMMODE INTEL}
+  {$ENDIF}
+{$ENDIF}

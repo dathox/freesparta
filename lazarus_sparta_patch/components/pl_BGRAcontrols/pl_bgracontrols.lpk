@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <Name Value="pl_bgracontrols"/>
+    <Type Value="RunAndDesignTime"/>
+    <AddToProjectUsesSection Value="True"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <SearchPaths>
+        <IncludeFiles Value="source"/>
+        <OtherUnitFiles Value="source"/>
+        <UnitOutputDirectory Value="lib/$(TargetCPU)-$(TargetOS)/$(LCLWidgetType)"/>
+      </SearchPaths>
+    </CompilerOptions>
+    <Description Value="Customizable component which using BGRABitmap
+for CodeTyphon Studio"/>
+    <License Value="GNU Library General Public License (LGPL)"/>
+    <Version Major="5" Minor="2" Release="1"/>
+    <Files Count="55">
+      <Item1>
+        <Filename Value="source/AllBGRAControlsRegister.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="AllBGRAControlsRegister"/>
+      </Item1>
+      <Item2>
+        <Filename Value="source/bcbasectrls.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="BCBaseCtrls"/>
+      </Item2>
+      <Item3>
+        <Filename Value="source/bcbutton.pas"/>
+        <UnitName Value="BCButton"/>
+      </Item3>
+      <Item4>
+        <Filename Value="source/bceffect.pas"/>
+        <UnitName Value="BCEffect"/>
+      </Item4>
+      <Item5>
+        <Filename Value="source/bcfilters.pas"/>
+        <UnitName Value="bcfilters"/>
+      </Item5>
+      <Item6>
+        <Filename Value="source/bcgamegrid.pas"/>
+        <UnitName Value="BCGameGrid"/>
+      </Item6>
+      <Item7>
+        <Filename Value="source/bcimagebutton.pas"/>
+        <UnitName Value="BCImageButton"/>
+      </Item7>
+      <Item8>
+        <Filename Value="source/bclabel.pas"/>
+        <UnitName Value="BCLabel"/>
+      </Item8>
+      <Item9>
+        <Filename Value="source/bcpanel.pas"/>
+        <UnitName Value="BCPanel"/>
+      </Item9>
+      <Item10>
+        <Filename Value="source/bcrtti.pas"/>
+        <UnitName Value="BCRTTI"/>
+      </Item10>
+      <Item11>
+        <Filename Value="source/bcstylesform.pas"/>
+        <UnitName Value="BCStylesForm"/>
+      </Item11>
+      <Item12>
+        <Filename Value="source/bcstylesform.lfm"/>
+        <Type Value="LFM"/>
+      </Item12>
+      <Item13>
+        <Filename Value="source/bctilemap.pas"/>
+        <UnitName Value="BCTileMap"/>
+      </Item13>
+      <Item14>
+        <Filename Value="source/bctools.pas"/>
+        <UnitName Value="BCTools"/>
+      </Item14>
+      <Item15>
+        <Filename Value="source/bctypes.pas"/>
+        <UnitName Value="BCTypes"/>
+      </Item15>
+      <Item16>
+        <Filename Value="source/bgrabitmapthemeutils.pas"/>
+        <UnitName Value="bgrabitmapthemeutils"/>
+      </Item16>
+      <Item17>
+        <Filename Value="source/bgrabutton.pas"/>
+        <UnitName Value="BGRAButton"/>
+      </Item17>
+      <Item18>
+        <Filename Value="source/bgraflashprogressbar.pas"/>
+        <UnitName Value="BGRAFlashProgressBar"/>
+      </Item18>
+      <Item19>
+        <Filename Value="source/bgragraphiccontrol.pas"/>
+        <UnitName Value="BGRAGraphicControl"/>
+      </Item19>
+      <Item20>
+        <Filename Value="source/bgraimagebutton.pas"/>
+        <UnitName Value="BGRAImageButton"/>
+      </Item20>
+      <Item21>
+        <Filename Value="source/bgraimagelist.pas"/>
+        <UnitName Value="BGRAImageList"/>
+      </Item21>
+      <Item22>
+        <Filename Value="source/bgraimagemanipulation.pas"/>
+        <UnitName Value="BGRAImageManipulation"/>
+      </Item22>
+      <Item23>
+        <Filename Value="source/bgraknob.pas"/>
+        <UnitName Value="BGRAKnob"/>
+      </Item23>
+      <Item24>
+        <Filename Value="source/bgralabel.pas"/>
+        <UnitName Value="BGRALabel"/>
+      </Item24>
+      <Item25>
+        <Filename Value="source/bgralabelfx.pas"/>
+        <UnitName Value="BGRALabelFX"/>
+      </Item25>
+      <Item26>
+        <Filename Value="source/bgraled.pas"/>
+        <UnitName Value="BGRALED"/>
+      </Item26>
+      <Item27>
+        <Filename Value="source/bgraneobutton.pas"/>
+        <UnitName Value="BGRANeoButton"/>
+      </Item27>
+      <Item28>
+        <Filename Value="source/bgrapanel.pas"/>
+        <UnitName Value="BGRAPanel"/>
+      </Item28>
+      <Item29>
+        <Filename Value="source/bgrapascalscript.pas"/>
+        <UnitName Value="BGRAPascalScript"/>
+      </Item29>
+      <Item30>
+        <Filename Value="source/bgraresizespeedbutton.pas"/>
+        <UnitName Value="BGRAResizeSpeedButton"/>
+      </Item30>
+      <Item31>
+        <Filename Value="source/bgraribbon.pas"/>
+        <UnitName Value="BGRARibbon"/>
+      </Item31>
+      <Item32>
+        <Filename Value="source/bgraribbongroup.pas"/>
+        <UnitName Value="BGRARibbonGroup"/>
+      </Item32>
+      <Item33>
+        <Filename Value="source/bgrarknob.pas"/>
+        <UnitName Value="BGRARKnob"/>
+      </Item33>
+      <Item34>
+        <Filename Value="source/bgrasamples.pas"/>
+        <UnitName Value="bgrasamples"/>
+      </Item34>
+      <Item35>
+        <Filename Value="source/bgrascript.pas"/>
+        <UnitName Value="BGRAScript"/>
+      </Item35>
+      <Item36>
+        <Filename Value="source/bgrashape.pas"/>
+        <UnitName Value="BGRAShape"/>
+      </Item36>
+      <Item37>
+        <Filename Value="source/bgraspeedbutton.pas"/>
+        <UnitName Value="BGRASpeedButton"/>
+      </Item37>
+      <Item38>
+        <Filename Value="source/bgraspriteanimation.pas"/>
+        <UnitName Value="BGRASpriteAnimation"/>
+      </Item38>
+      <Item39>
+        <Filename Value="source/bgratextfxtypes.pas"/>
+        <UnitName Value="BGRATextFXTypes"/>
+      </Item39>
+      <Item40>
+        <Filename Value="source/bgravirtualscreen.pas"/>
+        <UnitName Value="BGRAVirtualScreen"/>
+      </Item40>
+      <Item41>
+        <Filename Value="source/bgrawin7toolbar.pas"/>
+        <UnitName Value="BGRAWin7ToolBar"/>
+      </Item41>
+      <Item42>
+        <Filename Value="source/custombgraimagebutton.pas"/>
+        <UnitName Value="CustomBGRAImageButton"/>
+      </Item42>
+      <Item43>
+        <Filename Value="source/custombgraimagebutton.inc"/>
+        <Type Value="Include"/>
+      </Item43>
+      <Item44>
+        <Filename Value="source/DataType.inc"/>
+        <Type Value="Include"/>
+      </Item44>
+      <Item45>
+        <Filename Value="source/dtanalogclock.pas"/>
+        <UnitName Value="DTAnalogClock"/>
+      </Item45>
+      <Item46>
+        <Filename Value="source/dtanalogcommon.pp"/>
+        <UnitName Value="DTAnalogCommon"/>
+      </Item46>
+      <Item47>
+        <Filename Value="source/dtanaloggauge.pp"/>
+        <UnitName Value="DTAnalogGauge"/>
+      </Item47>
+      <Item48>
+        <Filename Value="source/dtthemedclock.pas"/>
+        <UnitName Value="dtthemedclock"/>
+      </Item48>
+      <Item49>
+        <Filename Value="source/dtthemedgauge.pp"/>
+        <UnitName Value="dtthemedgauge"/>
+      </Item49>
+      <Item50>
+        <Filename Value="source/ueknob.pas"/>
+        <UnitName Value="uEKnob"/>
+      </Item50>
+      <Item51>
+        <Filename Value="source/ueled.pas"/>
+        <UnitName Value="ueled"/>
+      </Item51>
+      <Item52>
+        <Filename Value="source/uemultiturn.pas"/>
+        <UnitName Value="uEMultiTurn"/>
+      </Item52>
+      <Item53>
+        <Filename Value="source/uerotimage.pas"/>
+        <UnitName Value="uERotImage"/>
+      </Item53>
+      <Item54>
+        <Filename Value="source/ueselector.pas"/>
+        <UnitName Value="uESelector"/>
+      </Item54>
+      <Item55>
+        <Filename Value="source/upsi_bgrapascalscript.pas"/>
+        <UnitName Value="uPSI_BGRAPascalScript"/>
+      </Item55>
+    </Files>
+    <RequiredPkgs Count="4">
+      <Item1>
+        <PackageName Value="pascalscript"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="pl_bgrabitmap"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="LCL"/>
+      </Item3>
+      <Item4>
+        <PackageName Value="FCL"/>
+        <MinVersion Major="1" Release="1"/>
+      </Item4>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+    <CustomOptions Items="ExternHelp" Version="2">
+      <_ExternHelp Items="Count"/>
+    </CustomOptions>
+  </Package>
+</CONFIG>

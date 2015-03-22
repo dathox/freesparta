@@ -1,0 +1,243 @@
+object edtuNonVisualEditor: TedtuNonVisualEditor
+  Left = 0
+  Height = 375
+  Top = 0
+  Width = 256
+  HorzScrollBar.Page = 256
+  VertScrollBar.Page = 375
+  AutoScroll = True
+  ClientHeight = 375
+  ClientWidth = 256
+  TabOrder = 0
+  object cbShowNonVisualComponents: TCheckBox
+    Left = 8
+    Height = 19
+    Top = 24
+    Width = 178
+    Caption = 'Show non-visual components'
+    Checked = True
+    OnEditingDone = cbShowNonVisualComponentsEditingDone
+    State = cbChecked
+    TabOrder = 0
+  end
+  object Label1: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = Owner
+    Left = 63
+    Height = 15
+    Top = 2
+    Width = 131
+    BorderSpacing.Top = 2
+    Caption = 'Non-visual components'
+    Font.Style = [fsBold]
+    ParentColor = False
+    ParentFont = False
+  end
+  object bSelectAllNonVisual: TButton
+    Left = 8
+    Height = 25
+    Top = 48
+    Width = 240
+    Caption = 'Select all non-visual components'
+    OnClick = bSelectAllNonVisualClick
+    TabOrder = 1
+  end
+  object gbArrange: TGroupBox
+    Left = 8
+    Height = 280
+    Top = 80
+    Width = 239
+    Caption = ' Arrange '
+    ClientHeight = 262
+    ClientWidth = 235
+    TabOrder = 2
+    object gbSpacing: TGroupBox
+      Left = 7
+      Height = 49
+      Top = 176
+      Width = 224
+      Caption = ' Spacing '
+      ClientHeight = 31
+      ClientWidth = 220
+      TabOrder = 0
+      object Label3: TLabel
+        AnchorSideTop.Control = seSpacingVertical
+        AnchorSideRight.Control = seSpacingVertical
+        Left = 124
+        Height = 15
+        Top = 6
+        Width = 39
+        Anchors = [akTop, akRight]
+        BorderSpacing.Top = 3
+        BorderSpacing.Right = 3
+        Caption = 'Vertical'
+        ParentColor = False
+      end
+      object seSpacingVertical: TSpinEdit
+        Left = 166
+        Height = 23
+        Top = 3
+        Width = 50
+        MaxValue = 2147483647
+        OnChange = seEdgeSpacingChange
+        TabOrder = 0
+      end
+      object Label2: TLabel
+        AnchorSideTop.Control = seSpacingHorizontal
+        AnchorSideRight.Control = seSpacingHorizontal
+        Left = 4
+        Height = 15
+        Top = 6
+        Width = 55
+        Anchors = [akTop, akRight]
+        BorderSpacing.Top = 3
+        BorderSpacing.Right = 3
+        Caption = 'Horizontal'
+        ParentColor = False
+      end
+      object seSpacingHorizontal: TSpinEdit
+        Left = 62
+        Height = 23
+        Top = 3
+        Width = 50
+        MaxValue = 2147483647
+        OnChange = seEdgeSpacingChange
+        TabOrder = 1
+      end
+    end
+    object gbLayout: TGroupBox
+      Left = 7
+      Height = 81
+      Top = 96
+      Width = 224
+      Caption = ' Layout '
+      ClientHeight = 63
+      ClientWidth = 220
+      TabOrder = 1
+      object rbPerColumn: TRadioButton
+        AnchorSideTop.Control = sePerColumn
+        Left = 6
+        Height = 19
+        Top = 4
+        Width = 153
+        BorderSpacing.Top = 2
+        Caption = 'Components per column'
+        OnChange = cbAnchorEditingDone
+        TabOrder = 0
+      end
+      object rbPerRow: TRadioButton
+        AnchorSideTop.Control = sePerRow
+        Left = 6
+        Height = 19
+        Top = 34
+        Width = 132
+        BorderSpacing.Top = 2
+        Caption = 'Components per row'
+        OnChange = cbAnchorEditingDone
+        TabOrder = 1
+      end
+      object sePerColumn: TSpinEdit
+        Left = 166
+        Height = 23
+        Top = 2
+        Width = 50
+        MaxValue = 2147483647
+        MinValue = 1
+        OnChange = seEdgeSpacingChange
+        TabOrder = 2
+        Value = 1
+      end
+      object sePerRow: TSpinEdit
+        Left = 166
+        Height = 23
+        Top = 32
+        Width = 50
+        MaxValue = 2147483647
+        MinValue = 1
+        OnChange = seEdgeSpacingChange
+        TabOrder = 3
+        Value = 1
+      end
+    end
+    object gbAnchor: TGroupBox
+      Left = 7
+      Height = 72
+      Top = 24
+      Width = 224
+      Caption = ' Anchor '
+      ClientHeight = 54
+      ClientWidth = 220
+      TabOrder = 2
+      object cbAnchor: TComboBox
+        Left = 52
+        Height = 23
+        Top = 0
+        Width = 164
+        ItemHeight = 15
+        OnChange = cbAnchorEditingDone
+        Style = csDropDownList
+        TabOrder = 0
+      end
+      object Label6: TLabel
+        AnchorSideTop.Control = cbAnchor
+        AnchorSideRight.Control = cbAnchor
+        Left = 10
+        Height = 15
+        Top = 2
+        Width = 39
+        Anchors = [akTop, akRight]
+        BorderSpacing.Top = 2
+        BorderSpacing.Right = 3
+        Caption = 'Anchor'
+        ParentColor = False
+      end
+      object Label7: TLabel
+        AnchorSideTop.Control = seEdgeSpacing
+        AnchorSideRight.Control = seEdgeSpacing
+        Left = 12
+        Height = 15
+        Top = 31
+        Width = 73
+        Anchors = [akTop, akLeft, akRight]
+        BorderSpacing.Top = 3
+        BorderSpacing.Right = 3
+        Caption = 'Edge spacing'
+        ParentColor = False
+      end
+      object seEdgeSpacing: TSpinEdit
+        Left = 88
+        Height = 23
+        Top = 28
+        Width = 50
+        Anchors = [akTop]
+        OnChange = seEdgeSpacingChange
+        TabOrder = 1
+      end
+    end
+    object sbSortByClassName: TSpeedButton
+      Left = 7
+      Height = 22
+      Top = 0
+      Width = 127
+      Caption = 'Sort by class name'
+      OnClick = sbSortByClassNameClick
+    end
+    object sbTranspose: TSpeedButton
+      Left = 142
+      Height = 22
+      Top = 0
+      Width = 89
+      Caption = 'Transposition'
+      OnClick = sbTransposeClick
+    end
+    object sbArrange: TSpeedButton
+      Left = 7
+      Height = 22
+      Top = 231
+      Width = 224
+      Caption = 'ARRANGE'
+      OnClick = sbArrangeClick
+    end
+  end
+end

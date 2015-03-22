@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <Package Version="4">
+    <PathDelim Value="\"/>
+    <Name Value="pl_glassdocking"/>
+    <Type Value="RunAndDesignTime"/>
+    <Author Value="PilotLogic"/>
+    <CompilerOptions>
+      <Version Value="11"/>
+      <PathDelim Value="\"/>
+      <SearchPaths>
+        <OtherUnitFiles Value="source"/>
+        <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)\$(LCLWidgetType)"/>
+      </SearchPaths>
+    </CompilerOptions>
+    <Description Value="Glass Docking for CodeTyphon Studio"/>
+    <Version Major="5" Minor="2" Release="1"/>
+    <Files Count="9">
+      <Item1>
+        <Filename Value="source\gd_dockingbase.pas"/>
+        <UnitName Value="gd_dockingbase"/>
+      </Item1>
+      <Item2>
+        <Filename Value="source\gd_dockingideboss.pas"/>
+        <UnitName Value="gd_dockingideboss"/>
+      </Item2>
+      <Item3>
+        <Filename Value="source\gd_dockingideframe.pas"/>
+        <UnitName Value="gd_dockingideframe"/>
+      </Item3>
+      <Item4>
+        <Filename Value="source\gd_dockingideframe.lfm"/>
+        <Type Value="LFM"/>
+      </Item4>
+      <Item5>
+        <Filename Value="source\gd_dockingideregister.pas"/>
+        <HasRegisterProc Value="True"/>
+        <UnitName Value="gd_dockingideregister"/>
+      </Item5>
+      <Item6>
+        <Filename Value="source\gd_dockingoptionsdlg.pas"/>
+        <UnitName Value="gd_dockingoptionsdlg"/>
+      </Item6>
+      <Item7>
+        <Filename Value="source\gd_dockingoptionsdlg.lfm"/>
+        <Type Value="LFM"/>
+      </Item7>
+      <Item8>
+        <Filename Value="source\gd_dockingstorage.pas"/>
+        <UnitName Value="gd_dockingstorage"/>
+      </Item8>
+      <Item9>
+        <Filename Value="source\gd_dockingstr.pas"/>
+        <UnitName Value="gd_dockingstr"/>
+      </Item9>
+    </Files>
+    <RequiredPkgs Count="5">
+      <Item1>
+        <PackageName Value="pl_bgracontrols"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="pl_bgrabitmap"/>
+      </Item2>
+      <Item3>
+        <PackageName Value="bs_ideintf"/>
+      </Item3>
+      <Item4>
+        <PackageName Value="LCL"/>
+      </Item4>
+      <Item5>
+        <PackageName Value="FCL"/>
+      </Item5>
+    </RequiredPkgs>
+    <UsageOptions>
+      <UnitPath Value="$(PkgOutDir)"/>
+    </UsageOptions>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+    <CustomOptions Items="ExternHelp" Version="2">
+      <_ExternHelp Items="Count"/>
+    </CustomOptions>
+  </Package>
+</CONFIG>

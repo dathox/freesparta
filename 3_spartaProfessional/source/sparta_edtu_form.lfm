@@ -1,0 +1,220 @@
+object edtuFormEditor: TedtuFormEditor
+  Left = 0
+  Height = 448
+  Top = 0
+  Width = 256
+  HorzScrollBar.Page = 256
+  VertScrollBar.Page = 448
+  ClientHeight = 448
+  ClientWidth = 256
+  TabOrder = 0
+  object rgPosition: TRadioGroup
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 0
+    Height = 105
+    Top = 0
+    Width = 256
+    AutoFill = True
+    Caption = ' Position '
+    ChildSizing.LeftRightSpacing = 6
+    ChildSizing.EnlargeHorizontal = crsHomogenousChildResize
+    ChildSizing.EnlargeVertical = crsHomogenousChildResize
+    ChildSizing.ShrinkHorizontal = crsScaleChilds
+    ChildSizing.ShrinkVertical = crsScaleChilds
+    ChildSizing.Layout = cclLeftToRightThenTopToBottom
+    ChildSizing.ControlsPerLine = 2
+    ClientHeight = 87
+    ClientWidth = 252
+    Columns = 2
+    Items.Strings = (
+      'Designed'
+      'Default'
+      'Default pos'
+      'Default size'
+      'Screen center'
+      'Desktop center'
+      'Main form center'
+      'Owner form center'
+    )
+    OnSelectionChanged = rgPositionSelectionChanged
+    TabOrder = 0
+  end
+  object iPosition: TImage
+    AnchorSideLeft.Control = rgPosition
+    AnchorSideTop.Control = rgPosition
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = rgPosition
+    AnchorSideRight.Side = asrBottom
+    Left = 0
+    Height = 128
+    Top = 106
+    Width = 256
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Top = 1
+    Center = True
+  end
+  object pForm: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = iPosition
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = rgPosition
+    AnchorSideRight.Side = asrBottom
+    Left = 0
+    Height = 214
+    Top = 234
+    Width = 256
+    Anchors = [akTop, akLeft, akRight]
+    BevelOuter = bvNone
+    ClientHeight = 214
+    ClientWidth = 256
+    TabOrder = 1
+    object lDesignedPosition: TLabel
+      AnchorSideLeft.Control = pForm
+      AnchorSideTop.Control = pForm
+      AnchorSideRight.Control = pForm
+      AnchorSideRight.Side = asrBottom
+      Left = 3
+      Height = 15
+      Top = 3
+      Width = 253
+      Anchors = [akTop, akLeft, akRight]
+      AutoSize = False
+      BorderSpacing.Left = 3
+      BorderSpacing.Top = 3
+      Caption = 'Designed position:'
+      ParentColor = False
+    end
+    object eLeft: TSpinEdit
+      AnchorSideTop.Control = cbResolution
+      AnchorSideTop.Side = asrBottom
+      Left = 24
+      Height = 23
+      Top = 24
+      Width = 56
+      BorderSpacing.Top = 1
+      MaxValue = 2147483647
+      MinValue = -2147483648
+      OnChange = eLeftChange
+      TabOrder = 0
+    end
+    object eTop: TSpinEdit
+      AnchorSideTop.Control = cbResolution
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = eLeft
+      Left = 112
+      Height = 23
+      Top = 23
+      Width = 58
+      MaxValue = 2147483647
+      MinValue = -2147483648
+      OnChange = eLeftChange
+      TabOrder = 1
+    end
+    object lLeft: TLabel
+      AnchorSideLeft.Control = eLeft
+      AnchorSideTop.Control = eLeft
+      AnchorSideRight.Control = eLeft
+      Left = 1
+      Height = 15
+      Top = 27
+      Width = 20
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Left'
+      ParentColor = False
+    end
+    object lTop: TLabel
+      AnchorSideTop.Control = eTop
+      AnchorSideRight.Control = eTop
+      Left = 88
+      Height = 15
+      Top = 26
+      Width = 21
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 3
+      BorderSpacing.Right = 3
+      Caption = 'Top'
+      ParentColor = False
+    end
+    object cbShowDesigned: TCheckBox
+      AnchorSideTop.Control = pDesktop
+      AnchorSideTop.Side = asrBottom
+      Left = 0
+      Height = 19
+      Top = 191
+      Width = 226
+      Caption = 'Show forms where position is designed'
+      OnEditingDone = cbShowDesignedEditingDone
+      TabOrder = 2
+    end
+    object cbResolution: TComboBox
+      AnchorSideTop.Control = pForm
+      AnchorSideRight.Control = pForm
+      AnchorSideRight.Side = asrBottom
+      Left = 104
+      Height = 23
+      Top = 0
+      Width = 152
+      Anchors = [akTop, akLeft, akRight]
+      ItemHeight = 15
+      Items.Strings = (
+        '640×480 (4:3)'
+        '800×480 (5:3)'
+        '800×600 (4:3)'
+        '1024×768 (4:3)'
+        '1280×720 (16:9)'
+        '1366×768 (16:9)'
+        '1280×800 (16:10)'
+        '1440×900 (16:10)'
+        '1280×1024 (5:4)'
+        '1600×1024 (16:10)'
+        '1400×1050 (4:3)'
+        '1024×600 (16:9)'
+        '1680×1050 (16:10)'
+        '1600×900 (16:9)'
+        '1920×1080 (16:9) '
+      )
+      OnSelect = cbResolutionSelect
+      Style = csDropDownList
+      TabOrder = 3
+    end
+    object pDesktop: TPanel
+      AnchorSideLeft.Control = pForm
+      AnchorSideTop.Control = eLeft
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = pForm
+      AnchorSideRight.Side = asrBottom
+      Left = 0
+      Height = 144
+      Top = 47
+      Width = 256
+      Anchors = [akTop, akLeft, akRight]
+      BevelOuter = bvNone
+      ClientHeight = 144
+      ClientWidth = 256
+      TabOrder = 4
+      object iDesktop: TImage
+        AnchorSideLeft.Control = pDesktop
+        AnchorSideTop.Control = pDesktop
+        AnchorSideRight.Control = pDesktop
+        AnchorSideRight.Side = asrBottom
+        AnchorSideBottom.Control = pDesktop
+        AnchorSideBottom.Side = asrBottom
+        Left = 0
+        Height = 144
+        Top = 0
+        Width = 256
+        Anchors = [akTop, akLeft, akRight, akBottom]
+      end
+      object iForm: TImage
+        Left = 120
+        Height = 16
+        Top = 54
+        Width = 16
+      end
+    end
+  end
+end
