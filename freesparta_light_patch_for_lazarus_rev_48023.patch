@@ -1,0 +1,3081 @@
+Index: components/ideintf/componenteditors.pas
+===================================================================
+--- components/ideintf/componenteditors.pas	(revision 48023)
++++ components/ideintf/componenteditors.pas	(working copy)
+@@ -429,7 +429,15 @@
+   TPropertyEditorFilterFunc =
+     function(const ATestEditor: TPropertyEditor): Boolean of object;
+ 
++// DaThoX begin
++  TIDEComponentsMaster = class
++    function DrawNonVisualComponents(ALookupRoot: TComponent): Boolean; virtual; abstract;
++  end;
+ 
++var
++  IDEComponentsMaster: TIDEComponentsMaster = nil;
++// DaThoX end
++
+ procedure RegisterEditorForm(const AEditorForm: TObject; const AReference: TPersistent);
+ procedure UnregisterEditorForm(const AEditorForm: TObject);
+ function FindEditorForm(const AReference: TPersistent): TObject;
+Index: components/ideintf/componentreg.pas
+===================================================================
+--- components/ideintf/componentreg.pas	(revision 48023)
++++ components/ideintf/componentreg.pas	(working copy)
+@@ -165,7 +165,7 @@
+   TGetComponentClassEvent = procedure(const AClass: TComponentClass) of object;
+   TUpdateCompVisibleEvent = procedure(AComponent: TRegisteredComponent;
+                       var VoteVisible: integer { Visible>0 }  ) of object;
+-  TComponentAddedEvent = procedure of object;
++  TComponentAddedEvent = procedure(ALookupRoot, AComponent: TComponent; ARegisteredComponent: TRegisteredComponent) of object; // DaThoX
+   RegisterUnitComponentProc = procedure(const Page, UnitName: ShortString;
+                                         ComponentClass: TComponentClass);
+   TBaseComponentPageList = specialize TFPGList<TBaseComponentPage>;
+@@ -205,9 +205,11 @@
+     procedure OnPageVisibleChanged({%H-}APage: TBaseComponentPage); virtual;
+     function VoteCompVisibility(AComponent: TRegisteredComponent): Boolean; virtual;
+     function GetSelected: TRegisteredComponent; virtual;
++    function GetMultiSelect: boolean; virtual; // DaThoX
+     procedure SetBaseComponentPageClass(const AValue: TBaseComponentPageClass); virtual;
+     procedure SetRegisteredComponentClass(const AValue: TRegisteredComponentClass); virtual;
+     procedure SetSelected(const AValue: TRegisteredComponent); virtual; abstract;
++    procedure SetMultiSelect(AValue: boolean); virtual; abstract; // DaThoX
+   public
+     constructor Create;
+     destructor Destroy; override;
+@@ -221,7 +223,8 @@
+     procedure EndUpdate;
+     function IsUpdateLocked: boolean;
+     procedure IncChangeStamp;
+-    procedure DoAfterComponentAdded; virtual;
++    procedure DoAfterComponentAdded(ALookupRoot, AComponent: TComponent; ARegisteredComponent: TRegisteredComponent); virtual; // DaThoX
++
+     function IndexOfPageName(const APageName: string): integer;
+     function IndexOfPageWithName(const APageName: string): integer;
+     function GetPage(const APageName: string; aCaseSens: Boolean = False): TBaseComponentPage;
+@@ -232,6 +235,7 @@
+     function CreateNewClassName(const Prefix: string): string;
+     function IndexOfPageComponent(AComponent: TComponent): integer;
+     procedure Update(ForceUpdateAll: Boolean); virtual; abstract;
++    procedure SetSelected(AComponent: TRegisteredComponent; AMulti: Boolean); virtual; // DaThoX
+     procedure IterateRegisteredClasses(Proc: TGetComponentClassEvent);
+     procedure RegisterCustomIDEComponents(
+                         const RegisterProc: RegisterUnitComponentProc); virtual; abstract;
+@@ -258,6 +262,9 @@
+     property OnEndUpdate: TEndUpdatePaletteEvent read FOnEndUpdate write FOnEndUpdate;
+     property HideControls: boolean read FHideControls write FHideControls;
+     property Selected: TRegisteredComponent read GetSelected write SetSelected;
++    // DaThoX begin
++    property MultiSelect: boolean read GetMultiSelect write SetMultiSelect;
++    // DaThoX end
+   end;
+   
+ 
+@@ -622,6 +629,13 @@
+   fOrigPageHelper.Clear;
+ end;
+ 
++// DaThoX begin
++function TBaseComponentPalette.GetMultiSelect: boolean;
++begin
++  Result := False;
++end;
++// DaThoX end
++
+ procedure TBaseComponentPalette.AddHandler(HandlerType: TComponentPaletteHandlerType;
+   const AMethod: TMethod; AsLast: boolean);
+ begin
+@@ -734,13 +748,14 @@
+   Inc(fChangeStamp);
+ end;
+ 
+-procedure TBaseComponentPalette.DoAfterComponentAdded;
++procedure TBaseComponentPalette.DoAfterComponentAdded(ALookupRoot, // DaThoX
++  AComponent: TComponent; ARegisteredComponent: TRegisteredComponent); // DaThoX
+ var
+   i: Integer;
+ begin
+   i:=FHandlers[cphtComponentAdded].Count;
+   while FHandlers[cphtComponentAdded].NextDownIndex(i) do
+-    TComponentAddedEvent(FHandlers[cphtComponentAdded][i])();
++    TComponentAddedEvent(FHandlers[cphtComponentAdded][i])(ALookupRoot, AComponent, ARegisteredComponent); // DaThoX
+ end;
+ 
+ function TBaseComponentPalette.IndexOfPageName(const APageName: string): integer;
+@@ -862,6 +877,16 @@
+     Result:=-1;
+ end;
+ 
++
++// DaThoX begin
++procedure TBaseComponentPalette.SetSelected(AComponent: TRegisteredComponent;
++  AMulti: Boolean);
++begin
++  MultiSelect := AMulti;
++  Selected := AComponent;
++end;
++// DaThoX end
++
+ procedure TBaseComponentPalette.IterateRegisteredClasses(Proc: TGetComponentClassEvent);
+ var
+   i: Integer;
+Index: components/ideintf/formeditingintf.pas
+===================================================================
+--- components/ideintf/formeditingintf.pas	(revision 48023)
++++ components/ideintf/formeditingintf.pas	(working copy)
+@@ -24,6 +24,13 @@
+   ComponentPaletteImageHeight = 24;
+   ComponentPaletteBtnWidth  = ComponentPaletteImageWidth + 3;
+   ComponentPaletteBtnHeight = ComponentPaletteImageHeight + 3;
++  // DaThoX begin
++  STD_DESIGNER_BASE_TFORM_CLASS_ID = 0;
++  STD_DESIGNER_BASE_TDATAMODULE_CLASS_ID = 1;
++  STD_DESIGNER_BASE_TFRAME_CLASS_ID = 2;
++  NON_CONTROL_PROXY_DESIGNER_FORM_ID = 0;
++  FRAME_PROXY_DESIGNER_FORM_ID = 1;
++  // DaThoX end
+ 
+ type
+   TDMCompAtPosFlag = (
+@@ -32,6 +39,101 @@
+     );
+   TDMCompAtPosFlags = set of TDMCompAtPosFlag;
+ 
++  // DaThoX begin
++  TDesignerMediator = class;
++
++  INonFormDesigner = interface
++  ['{244DEC6B-80FB-4B28-85EF-FE613D1E2DD3}']
++    procedure Create;
++
++    function GetLookupRoot: TComponent;
++    procedure SetLookupRoot(const AValue: TComponent);
++    property LookupRoot: TComponent read GetLookupRoot write SetLookupRoot;
++
++    procedure SetBounds(ALeft, ATop, AWidth, AHeight: integer);
++    procedure Notification(AComponent: TComponent; AOperation: TOperation);
++    procedure Paint;
++
++    procedure DoSaveBounds;
++    procedure DoLoadBounds;
++  end;
++
++  IFrameDesigner = interface(INonFormDesigner)
++  ['{2B9442B0-6359-450A-88A1-BB6744F84918}']
++  end;
++
++
++  INonControlDesigner = interface(INonFormDesigner)
++  ['{5943A33C-F812-4052-BFE8-77AEA73199A9}']
++    function GetMediator: TDesignerMediator;
++    procedure SetMediator(AValue: TDesignerMediator);
++    property Mediator: TDesignerMediator read GetMediator write SetMediator;
++  end;
++
++  { TFormProxyDesignerForm }
++
++  { TNonFormProxyDesignerForm }
++  TNonFormProxyDesignerForm = class(TForm, INonFormDesigner)
++  private
++    FNonFormDesigner: INonFormDesigner;
++    FLookupRoot: TComponent;
++    //FNonFormDesignerOptions: TNonFormDesignerOptions;
++  protected
++    procedure Notification(AComponent: TComponent; AOperation: TOperation); override;
++//    procedure DoSetBounds(ALeft, ATop, AWidth, AHeight: integer); override; NonControl
++
++    procedure SetLookupRoot(AValue: TComponent); virtual;
++    function GetPublishedBounds(AIndex: Integer): Integer; virtual;
++    procedure SetPublishedBounds(AIndex: Integer; AValue: Integer); virtual;
++  public
++    constructor Create(AOwner: TComponent; ANonFormDesigner: INonFormDesigner); virtual; reintroduce;
++    procedure Paint; override;
++
++    procedure SetBounds(ALeft, ATop, AWidth, AHeight: integer); override;
++    procedure SetDesignerFormBounds(ALeft, ATop, AWidth, AHeight: integer);
++    procedure SetPublishedBounds(ALeft, ATop, AWidth, AHeight: integer);
++    procedure SetLookupRootBounds(ALeft, ATop, AWidth, AHeight: integer); virtual;
++
++    function DockedDesigner: boolean; virtual;
++
++    property NonFormDesigner: INonFormDesigner read FNonFormDesigner  implements INonFormDesigner;
++    property LookupRoot: TComponent read FLookupRoot write SetLookupRoot;
++    //property NonFormDesignerOptions: TNonFormDesignerOptions read FNonFormDesignerOptions write FNonFormDesignerOptions;
++  published
++    property Left: Integer index 0 read GetPublishedBounds write SetPublishedBounds;
++    property Top: Integer index 1 read GetPublishedBounds write SetPublishedBounds;
++    property Width: Integer index 2 read GetPublishedBounds write SetPublishedBounds;
++    property Height: Integer index 3 read GetPublishedBounds write SetPublishedBounds;
++    property ClientWidth: Integer index 2 read GetPublishedBounds write SetPublishedBounds;
++    property ClientHeight: Integer index 3 read GetPublishedBounds write SetPublishedBounds;
++  end;
++
++  { TFrameProxyDesignerForm }
++
++  TFrameProxyDesignerForm = class(TNonFormProxyDesignerForm, IFrameDesigner)
++  private
++    function GetFrameDesigner: IFrameDesigner;
++  public
++    property FrameDesigner: IFrameDesigner read GetFrameDesigner implements IFrameDesigner;
++  end;
++
++  { TNonControlProxyDesignerForm }
++
++  TNonControlProxyDesignerForm = class(TNonFormProxyDesignerForm, INonControlDesigner)
++  private
++    FMediator: TDesignerMediator;
++    function GetNonControlDesigner: INonControlDesigner;
++  protected
++    procedure SetMediator(AValue: TDesignerMediator); virtual;
++  public
++    property NonControlDesigner: INonControlDesigner read GetNonControlDesigner implements INonControlDesigner;
++    property Mediator: TDesignerMediator read FMediator write SetMediator;
++  end;
++
++  TNonFormProxyDesignerFormClass = class of TNonFormProxyDesignerForm;
++
++  // DaThoX end
++
+   { TDesignerMediator
+     To edit designer forms which do not use the LCL, register a TDesignerMediator,
+     which will emulate the painting, handle the mouse and editing bounds. }
+@@ -89,11 +191,18 @@
+   { TAbstractFormEditor }
+   
+   TAbstractFormEditor = class
++  private // DaThoX 
++    FNonFormProxyDesignerFormClass: array[0..1] of TNonFormProxyDesignerFormClass; // DaThoX
+   protected
+     function GetDesignerBaseClasses(Index: integer): TComponentClass; virtual; abstract;
++    function GetStandardDesignerBaseClasses(Index: integer): TComponentClass; virtual; abstract; // DaThoX
++    procedure SetStandardDesignerBaseClasses(Index: integer; AValue: TComponentClass); virtual; abstract; // DaThoX
+     function GetDesigner(Index: integer): TIDesigner; virtual; abstract;
+     function GetDesignerMediators(Index: integer): TDesignerMediatorClass; virtual; abstract;
++    function GetNonFormProxyDesignerForm(Index: Integer): TNonFormProxyDesignerFormClass; virtual; // DaThoX
++    procedure SetNonFormProxyDesignerForm(Index: Integer; AValue: TNonFormProxyDesignerFormClass); virtual; // DaThoX
+   public
++    constructor Create; // DaThoX
+     // persistent
+     procedure RegisterDefineProperty(const APersistentClassName,
+                                      Identifier: string); virtual; abstract;
+@@ -138,6 +247,8 @@
+     function DescendFromDesignerBaseClass(AClass: TComponentClass): integer; virtual; abstract;
+     function FindDesignerBaseClassByName(const AClassName: shortstring; WithDefaults: boolean): TComponentClass; virtual; abstract;
+ 
++    property StandardDesignerBaseClasses[Index: integer]: TComponentClass read GetStandardDesignerBaseClasses write SetStandardDesignerBaseClasses; // DaThoX
++    function StandardDesignerBaseClassesCount: Integer; virtual; abstract; // DaThoX
+     // designers
+     function DesignerCount: integer; virtual; abstract;
+     property Designer[Index: integer]: TIDesigner read GetDesigner;
+@@ -145,6 +256,8 @@
+     function GetDesignerForm(APersistent: TPersistent): TCustomForm; virtual; abstract;
+     function GetDesignerByComponent(AComponent: TComponent
+                                     ): TIDesigner; virtual; abstract;
++    function NonFormProxyDesignerFormCount: integer; virtual; // DaThoX
++    property NonFormProxyDesignerForm[Index: integer]: TNonFormProxyDesignerFormClass read GetNonFormProxyDesignerForm write SetNonFormProxyDesignerForm; // DaThoX
+ 
+     // mediators for non LCL forms
+     procedure RegisterDesignerMediator(MediatorClass: TDesignerMediatorClass); virtual; abstract; // auto calls RegisterDesignerBaseClass
+@@ -188,10 +301,32 @@
+ procedure SetDesignInfoTop(AComponent: TComponent; const aTop: SmallInt); inline;
+ function LeftTopToDesignInfo(const ALeft, ATop: SmallInt): LongInt; inline;
+ procedure DesignInfoToLeftTop(ADesignInfo: LongInt; out ALeft, ATop: SmallInt); inline;
++function IsFormDesign(fm: TCustomForm): boolean; // DaThoX
++function LookupRoot(AForm: TCustomForm): TComponent; // DaThoX
+ 
+ implementation
+ 
++// DaThoX begin
++function IsFormDesign(fm: TCustomForm): boolean;
++begin
++  if fm = nil then
++    Exit(False);
++  Result := (csDesignInstance in fm.ComponentState)
++     or ((csDesigning in fm.ComponentState) and (fm.Designer <> nil))
++     or (fm is TNonFormProxyDesignerForm);
++end;
+ 
++function LookupRoot(AForm: TCustomForm): TComponent;
++begin
++  if AForm is TNonFormProxyDesignerForm then
++    Result := TNonFormProxyDesignerForm(AForm).LookupRoot
++  else if csDesignInstance in AForm.ComponentState then
++    Result := AForm
++  else
++    Result := nil;
++end;
++// DaThoX end
++
+ procedure GetComponentLeftTopOrDesignInfo(AComponent: TComponent; out aLeft,
+   aTop: integer);
+ var
+@@ -280,6 +415,138 @@
+   ATop := LazLongRec(ADesignInfo).Hi;
+ end;
+ 
++// DaThoX begin
++{ TAbstractFormEditor }
++
++function TAbstractFormEditor.GetNonFormProxyDesignerForm(Index: Integer
++  ): TNonFormProxyDesignerFormClass;
++begin
++  Result := FNonFormProxyDesignerFormClass[Index];
++end;
++
++procedure TAbstractFormEditor.SetNonFormProxyDesignerForm(Index: Integer;
++  AValue: TNonFormProxyDesignerFormClass);
++begin
++  FNonFormProxyDesignerFormClass[Index] := AValue;
++end;
++
++constructor TAbstractFormEditor.Create;
++begin
++  FNonFormProxyDesignerFormClass[NON_CONTROL_PROXY_DESIGNER_FORM_ID] := TNonControlProxyDesignerForm;
++  FNonFormProxyDesignerFormClass[FRAME_PROXY_DESIGNER_FORM_ID] := TFrameProxyDesignerForm;
++end;
++
++function TAbstractFormEditor.NonFormProxyDesignerFormCount: integer;
++begin
++  Result := Length(FNonFormProxyDesignerFormClass);
++end;
++
++{ TNonControlProxyDesignerForm }
++
++function TNonControlProxyDesignerForm.GetNonControlDesigner: INonControlDesigner;
++begin
++  Result := FNonFormDesigner as INonControlDesigner;
++end;
++
++procedure TNonControlProxyDesignerForm.SetMediator(AValue: TDesignerMediator);
++begin
++  FMediator := AValue;
++end;
++
++{ TFrameProxyDesignerForm }
++
++function TFrameProxyDesignerForm.GetFrameDesigner: IFrameDesigner;
++begin
++  Result := FNonFormDesigner as IFrameDesigner;
++end;
++
++{ TNonFormProxyDesignerForm }
++
++procedure TNonFormProxyDesignerForm.Notification(AComponent: TComponent;
++  AOperation: TOperation);
++begin
++  inherited Notification(AComponent, AOperation);
++  if Assigned(FNonFormDesigner) then
++    FNonFormDesigner.Notification(AComponent, AOperation);
++end;
++
++procedure TNonFormProxyDesignerForm.SetLookupRoot(AValue: TComponent);
++begin
++  FLookupRoot := AValue;
++end;
++
++function TNonFormProxyDesignerForm.GetPublishedBounds(AIndex: Integer): Integer;
++begin
++  case AIndex of
++    0: Result := inherited Left;
++    1: Result := inherited Top;
++    2: Result := inherited Width;
++    3: Result := inherited Height;
++  end;
++end;
++
++procedure TNonFormProxyDesignerForm.SetPublishedBounds(AIndex: Integer;
++  AValue: Integer);
++begin
++  case AIndex of
++    0: inherited Left := AValue;
++    1: inherited Top := AValue;
++    2: inherited Width := AValue;
++    3: inherited Height := AValue;
++  end;
++end;
++
++constructor TNonFormProxyDesignerForm.Create(AOwner: TComponent;
++  ANonFormDesigner: INonFormDesigner);
++begin
++  inherited CreateNew(AOwner, 1);
++
++  FNonFormDesigner := ANonFormDesigner;
++  FNonFormDesigner.Create;
++end;
++
++procedure TNonFormProxyDesignerForm.Paint;
++begin
++  inherited Paint;
++  FNonFormDesigner.Paint;
++end;
++
++procedure TNonFormProxyDesignerForm.SetBounds(ALeft, ATop, AWidth,
++  AHeight: integer);
++begin
++  inherited SetBounds(aLeft, aTop, aWidth, aHeight);
++  if Assigned(FNonFormDesigner) then
++    FNonFormDesigner.SetBounds(ALeft, ATop, AWidth, AHeight);
++end;
++
++procedure TNonFormProxyDesignerForm.SetDesignerFormBounds(ALeft, ATop, AWidth,
++  AHeight: integer);
++begin
++  inherited SetBounds(aLeft, aTop, aWidth, aHeight);
++end;
++
++procedure TNonFormProxyDesignerForm.SetPublishedBounds(ALeft, ATop, AWidth,
++  AHeight: integer);
++begin
++  SetPublishedBounds(0, ALeft);
++  SetPublishedBounds(1, ATop);
++  SetPublishedBounds(2, AWidth);
++  SetPublishedBounds(3, AHeight);
++end;
++
++procedure TNonFormProxyDesignerForm.SetLookupRootBounds(ALeft, ATop, AWidth,
++  AHeight: integer);
++begin
++  if LookupRoot is TControl then
++    TControl(LookupRoot).SetBounds(ALeft, ATop, AWidth, AHeight);
++end;
++
++function TNonFormProxyDesignerForm.DockedDesigner: boolean;
++begin
++  Result := False;
++end;
++// DaThoX end
++
+ { TDesignerMediator }
+ 
+ procedure TDesignerMediator.SetRoot(const AValue: TComponent);
+Index: components/ideintf/idewindowintf.pas
+===================================================================
+--- components/ideintf/idewindowintf.pas	(revision 48023)
++++ components/ideintf/idewindowintf.pas	(working copy)
+@@ -467,6 +467,11 @@
+ 
+ implementation
+ 
++// DaThoX begin
++uses
++  LazIDEIntf;
++// DaThoX end
++
+ function StrToIDEWindowPlacement(const s: string): TIDEWindowPlacement;
+ begin
+   for Result:=Low(TIDEWindowPlacement) to High(TIDEWindowPlacement) do
+@@ -2061,7 +2066,12 @@
+     // show dockable if it has a creator and is not a designer form
+     IDEDockMaster.ShowForm(AForm,BringToFront)
+   else
+-    SimpleLayoutStorage.ApplyAndShow(Self,AForm,BringToFront,AMoveToVisbleMode);
++    // DaThoX begin
++    if (IDETabMaster <> nil) and (csDesigning in AForm.ComponentState) then
++      IDETabMaster.ShowForm(AForm)
++    else
++    // DaThoX end
++      SimpleLayoutStorage.ApplyAndShow(Self,AForm,BringToFront,AMoveToVisbleMode);
+ end;
+ 
+ function TIDEWindowCreatorList.ShowForm(AFormName: string; BringToFront: boolean
+Index: components/ideintf/lazideintf.pas
+===================================================================
+--- components/ideintf/lazideintf.pas	(revision 48023)
++++ components/ideintf/lazideintf.pas	(working copy)
+@@ -128,6 +128,22 @@
+     );
+   TFindUnitFileFlags = set of TFindUnitFileFlag;
+ 
++  // DaThoX begin
++  // selected part of IDE
++  TTabDisplayState = (
++    tdsNone,
++    tdsCode,     // focussing sourcenotebook or source tab
++    tdsDesign,   // focussing designer form/design tab
++    tdsOther     // focussing other (user defined) tab assigned to module (like History Tab)
++    );
++
++  TTabDisplayStateFlag = (
++    edsfIDE,
++    edsfForce
++    );
++  TTabDisplayStateFlags = set of TTabDisplayStateFlag;
++  // DaThoX end
++
+   // find source flags
+   // Normally you don't need to pass any flags.
+   TFindSourceFlag = (
+@@ -148,6 +164,9 @@
+     var Params: string // these parameters are passed to fpc.
+       // Global options should be prependended, project options should be appended.
+     ): boolean of object;
++  // DaThoX
++  TShowDesignerFormOfSourceFunction = procedure(Sender: TObject; AEditor: TSourceEditorInterface;
++                                 AComponentPaletteClassSelected: Boolean) of object;
+ 
+   TLazarusIDEHandlerType = (
+     lihtSavingAll, // called before IDE saves everything
+@@ -160,7 +179,13 @@
+     lihtProjectDependenciesCompiling, // called before IDE compiles dependencies of project
+     lihtProjectDependenciesCompiled, // called after IDE compiled dependencies of project
+     lihtQuickSyntaxCheck,  // called when quick syntax check is clicked (menu item or shortcut)
+-    lihtGetFPCFrontEndParams // called when the IDE gets the parameters of the 'fpc' front end tool
++    lihtGetFPCFrontEndParams, // called when the IDE gets the parameters of the 'fpc' front end tool
++    // dathox begin
++    lihtShowDesignerFormOfSource, // called when showed a designer form for code editor (AEditor can be nil!)
++    lihtShowSourceOfActiveDesignerForm, // called when showed a code of designer form
++    lihtUpdateIDEComponentPalette,
++    lihtUpdateComponentPageControl
++    // dathox end
+     );
+     
+   { TLazIDEInterface }
+@@ -181,11 +206,20 @@
+     LastActivatedWindows: TFPList;
+ 
+     function GetActiveProject: TLazProject; virtual; abstract;
+-    procedure DoCallNotifyHandler(HandlerType: TLazarusIDEHandlerType);
++    procedure DoCallNotifyHandler(HandlerType: TLazarusIDEHandlerType); overload; // DaThoX
+     function DoCallModalFunctionHandler(HandlerType: TLazarusIDEHandlerType
+                                         ): TModalResult;
+     function DoCallModalHandledHandler(HandlerType: TLazarusIDEHandlerType;
+                                        var Handled: boolean): TModalResult;
++    // DaThoX begin
++    procedure DoCallNotifyHandler(HandlerType: TLazarusIDEHandlerType;
++                                  Sender: TObject); overload;
++    procedure DoCallShowDesignerFormOfSourceHandler(
++      HandlerType: TLazarusIDEHandlerType;
++      Sender: TObject; AEditor: TSourceEditorInterface;
++      AComponentPaletteClassSelected: Boolean);
++    // DaThoX end
++
+     procedure SetMainBarSubTitle(const AValue: string); virtual;
+   public
+     constructor Create(TheOwner: TComponent); override;
+@@ -305,6 +339,13 @@
+                               LoadForm: boolean): TIDesigner; virtual; abstract;
+     function GetProjectFileWithRootComponent(AComponent: TComponent): TLazProjectFile; virtual; abstract;
+     function GetProjectFileWithDesigner(ADesigner: TIDesigner): TLazProjectFile; virtual; abstract;
++    // DaThoX
++    procedure DoShowDesignerFormOfSrc(AEditor: TSourceEditorInterface); virtual; abstract; overload;
++    procedure DoShowMethod(AEditor: TSourceEditorInterface; const AMethodName: String); virtual; abstract;
++    procedure DoShowDesignerFormOfSrc(AEditor: TSourceEditorInterface; out AForm: TCustomForm); virtual; abstract; overload;
++
++    //procedure ChangeExtendedDisplayState(ASelectedPart: TExtendedDisplayState; AFlags: TExtendedDisplayStateFlags); virtual; abstract;
++    // DaThoX
+     
+     // events
+     procedure RemoveAllHandlersOfObject(AnObject: TObject);
+@@ -356,10 +397,52 @@
+     procedure RemoveHandlerGetFPCFrontEndParams(
+                                           const Handler: TGetFPCFrontEndParams);
+     function CallHandlerGetFPCFrontEndParams(Sender: TObject; var Params: string): boolean;
++    // DaThoX begin
++    procedure AddHandlerOnUpdateIDEComponentPalette(
++                           const OnUpdateIDEComponentPaletteEvent: TNotifyEvent;
++                           AsLast: boolean = false);
++    procedure RemoveHandlerOnUpdateIDEComponentPalette(
++                               const OnUpdateIDEComponentPaletteEvent: TNotifyEvent);
++    procedure AddHandlerOnUpdateComponentPageControl(
++                           const OnUpdateComponentPageControlEvent: TNotifyEvent;
++                           AsLast: boolean = false);
++    procedure RemoveHandlerOnUpdateComponentPageControl(
++                               const OnUpdateComponentPageControlEvent: TNotifyEvent);
++    procedure AddHandlerOnShowDesignerFormOfSource(
++                           const OnShowDesignerFormOfSourceEvent: TShowDesignerFormOfSourceFunction;
++                           AsLast: boolean = false);
++    procedure RemoveHandlerOnShowDesignerFormOfSource(
++                               const OnShowDesignerFormOfSourceEvent: TShowDesignerFormOfSourceFunction);
++    procedure AddHandlerOnShowSourceOfActiveDesignerForm(
++                           const OnShowSourceOfActiveDesignerForm: TNotifyEvent;
++                           AsLast: boolean = false);
++    procedure RemoveHandlerOnShowSourceOfActiveDesignerForm(
++                               const OnShowSourceOfActiveDesignerForm: TNotifyEvent);
++    // DaThoX end
+   end;
+   
++  // DaThoX begin
++  TIDETabMaster = class
++  protected
++    function GetTabDisplayState: TTabDisplayState; virtual; abstract;
++    function GetTabDisplayStateEditor(Index: TSourceEditorInterface): TTabDisplayState; virtual; abstract;
++  public
++    procedure ToggleFormUnit; virtual; abstract;
++    procedure JumpToCompilerMessage(ASourceEditor: TSourceEditorInterface); virtual; abstract;
++
++    property TabDisplayState: TTabDisplayState read GetTabDisplayState;
++    property TabDisplayStateEditor[Index: TSourceEditorInterface]: TTabDisplayState read GetTabDisplayStateEditor;
++
++    procedure ShowCode(ASourceEditor: TSourceEditorInterface); virtual; abstract;
++    procedure ShowDesigner(ASourceEditor: TSourceEditorInterface; AIndex: Integer = 0); virtual; abstract;
++    procedure ShowForm(AForm: TCustomForm); virtual; abstract;
++  end;
++  // DaThoX end
++
+ var
+   LazarusIDE: TLazIDEInterface = nil; // will be set by the IDE
++  // DaThoX
++  IDETabMaster: TIDETabMaster = nil;
+ 
+ type
+   TLazarusIDEBootHandlerType = (
+@@ -468,6 +551,25 @@
+   Result:=mrOk;
+ end;
+ 
++// DaThoX begin
++procedure TLazIDEInterface.DoCallNotifyHandler(
++  HandlerType: TLazarusIDEHandlerType; Sender: TObject);
++begin
++  FLazarusIDEHandlers[HandlerType].CallNotifyEvents(Sender);
++end;
++
++procedure TLazIDEInterface.DoCallShowDesignerFormOfSourceHandler(
++  HandlerType: TLazarusIDEHandlerType; Sender: TObject;
++  AEditor: TSourceEditorInterface; AComponentPaletteClassSelected: Boolean);
++var
++  i: Integer;
++begin
++  i := FLazarusIDEHandlers[HandlerType].Count;
++  while FLazarusIDEHandlers[HandlerType].NextDownIndex(i) do
++    TShowDesignerFormOfSourceFunction(FLazarusIDEHandlers[HandlerType][i])(Sender, AEditor, AComponentPaletteClassSelected);
++end;
++// DaThoX end
++
+ constructor TLazIDEInterface.Create(TheOwner: TComponent);
+ begin
+   LazarusIDE:=Self;
+@@ -651,6 +753,58 @@
+   AddHandler(lihtGetFPCFrontEndParams,TMethod(Handler),AsLast);
+ end;
+ 
++// dathox begin
++procedure TLazIDEInterface.AddHandlerOnUpdateIDEComponentPalette(
++  const OnUpdateIDEComponentPaletteEvent: TNotifyEvent; AsLast: boolean);
++begin
++  AddHandler(lihtUpdateIDEComponentPalette,TMethod(OnUpdateIDEComponentPaletteEvent),AsLast);
++end;
++
++procedure TLazIDEInterface.RemoveHandlerOnUpdateIDEComponentPalette(
++  const OnUpdateIDEComponentPaletteEvent: TNotifyEvent);
++begin
++  RemoveHandler(lihtUpdateIDEComponentPalette,TMethod(OnUpdateIDEComponentPaletteEvent));
++end;
++
++procedure TLazIDEInterface.AddHandlerOnUpdateComponentPageControl(
++  const OnUpdateComponentPageControlEvent: TNotifyEvent; AsLast: boolean);
++begin
++  AddHandler(lihtUpdateComponentPageControl,TMethod(OnUpdateComponentPageControlEvent),AsLast);
++end;
++
++procedure TLazIDEInterface.RemoveHandlerOnUpdateComponentPageControl(
++  const OnUpdateComponentPageControlEvent: TNotifyEvent);
++begin
++  RemoveHandler(lihtUpdateComponentPageControl,TMethod(OnUpdateComponentPageControlEvent));
++end;
++
++
++procedure TLazIDEInterface.AddHandlerOnShowDesignerFormOfSource(
++  const OnShowDesignerFormOfSourceEvent: TShowDesignerFormOfSourceFunction; AsLast: boolean);
++begin
++  AddHandler(lihtShowDesignerFormOfSource,TMethod(OnShowDesignerFormOfSourceEvent),AsLast);
++end;
++
++procedure TLazIDEInterface.RemoveHandlerOnShowDesignerFormOfSource(
++  const OnShowDesignerFormOfSourceEvent: TShowDesignerFormOfSourceFunction);
++begin
++  RemoveHandler(lihtShowDesignerFormOfSource,TMethod(OnShowDesignerFormOfSourceEvent));
++end;
++
++procedure TLazIDEInterface.AddHandlerOnShowSourceOfActiveDesignerForm(
++  const OnShowSourceOfActiveDesignerForm: TNotifyEvent; AsLast: boolean);
++begin
++  AddHandler(lihtShowSourceOfActiveDesignerForm,TMethod(OnShowSourceOfActiveDesignerForm),AsLast);
++end;
++
++procedure TLazIDEInterface.RemoveHandlerOnShowSourceOfActiveDesignerForm(
++  const OnShowSourceOfActiveDesignerForm: TNotifyEvent);
++begin
++  RemoveHandler(lihtShowSourceOfActiveDesignerForm,TMethod(OnShowSourceOfActiveDesignerForm));
++end;
++
++// dathox end
++
+ procedure TLazIDEInterface.RemoveHandlerGetFPCFrontEndParams(
+   const Handler: TGetFPCFrontEndParams);
+ begin
+Index: components/ideintf/objectinspector.pp
+===================================================================
+--- components/ideintf/objectinspector.pp	(revision 48023)
++++ components/ideintf/objectinspector.pp	(working copy)
+@@ -37,7 +37,9 @@
+   LazConfigStorage, Menus, Dialogs, Themes, TreeFilterEdit, ObjInspStrConsts,
+   PropEdits, ListViewPropEdit, ImageListEditor,
+   ComponentTreeView, ComponentEditors, IDEImagesIntf, IDEHelpIntf,
+-  OIFavoriteProperties, PropEditUtils;
++  OIFavoriteProperties, PropEditUtils,
++  Clipbrd // DaThoX
++  ;
+ 
+ const
+   OIOptionsFileVersion = 3;
+@@ -453,6 +455,13 @@
+     procedure SetCurrentRowValue(const NewValue: string);
+     procedure SetItemIndexAndFocus(NewItemIndex: integer;
+                                    WasValueClick: Boolean = False);
++    // DaThoX begin
++    procedure SelectAll; virtual;
++    procedure CopyToClipboard; virtual;
++    procedure CutToClipboard; virtual;
++    procedure PasteFromClipboard; virtual;
++    procedure Undo; virtual;
++    // DaThoX end
+ 
+     property BackgroundColor: TColor read FBackgroundColor
+                                      write SetBackgroundColor default DefBackgroundColor;
+@@ -1213,6 +1222,11 @@
+   if (not ASelection.ForceUpdate) and FSelection.IsEqual(ASelection) then exit;
+ 
+   OldSelectedRowPath:=PropertyPath(ItemIndex);
++  // DaThoX begin
++  // fix for lack for exit event, during exiting by left click on other control
++  if FCurrentEdit = ValueEdit then
++    ValueEditExit(Self);
++  // DaThoX end
+   ItemIndex:=-1;
+   ClearRows;
+   FSelection.Assign(ASelection);
+@@ -2076,6 +2090,54 @@
+   end;
+ end;
+ 
++// DaThoX begin
++
++procedure TOICustomPropertyGrid.SelectAll;
++begin
++  if FCurrentEdit=ValueEdit then
++    ValueEdit.SelectAll
++  else if FCurrentEdit=ValueComboBox then
++    ValueComboBox.SelectAll
++end;
++
++procedure TOICustomPropertyGrid.CopyToClipboard;
++begin
++  if FCurrentEdit=ValueEdit then
++    ValueEdit.CopyToClipboard
++  else if FCurrentEdit=ValueComboBox then
++    Clipboard.AsText := ValueComboBox.SelText;
++end;
++
++procedure TOICustomPropertyGrid.CutToClipboard;
++begin
++  if FCurrentEdit=ValueEdit then
++    ValueEdit.CutToClipboard
++  else if FCurrentEdit=ValueComboBox then
++  begin
++    Clipboard.AsText := ValueComboBox.SelText;
++    ValueComboBox.SelText := '';
++  end;
++end;
++
++procedure TOICustomPropertyGrid.PasteFromClipboard;
++begin
++  if FCurrentEdit=ValueEdit then
++  begin
++    ValueEdit.PasteFromClipboard;
++  //  ValueEditChange(Self);
++  end
++  else if FCurrentEdit=ValueComboBox then
++    ValueComboBox.SelText := Clipboard.AsText;
++end;
++
++procedure TOICustomPropertyGrid.Undo;
++begin
++  if FCurrentEdit=ValueEdit then
++    ValueEdit.Undo;
++end;
++
++// DaThoX end
++
+ function TOICustomPropertyGrid.CanEditRowValue(CheckFocus: boolean): boolean;
+ var
+   FocusedControl: TWinControl;
+Index: components/ideintf/propedits.pp
+===================================================================
+--- components/ideintf/propedits.pp	(revision 48023)
++++ components/ideintf/propedits.pp	(working copy)
+@@ -1197,6 +1197,7 @@
+   TPropHookPersistentAdded = procedure(APersistent: TPersistent; Select: boolean
+                                       ) of object;
+   TPropHookPersistentDeleting = procedure(APersistent: TPersistent) of object;
++  TPropHookPersistentDeleted = procedure of object; // DaThoX
+   TPropHookDeletePersistent = procedure(var APersistent: TPersistent) of object;
+   TPropHookGetSelection = procedure(const ASelection: TPersistentSelectionList
+                                              ) of object;
+@@ -1243,6 +1244,7 @@
+     htBeforeAddPersistent,
+     htPersistentAdded,
+     htPersistentDeleting,
++    htPersistentDeleted, // DaThoX
+     htDeletePersistent,
+     htGetSelectedPersistents,
+     htSetSelectedPersistents,
+@@ -1317,6 +1319,7 @@
+     procedure ComponentRenamed(AComponent: TComponent);
+     procedure PersistentAdded(APersistent: TPersistent; Select: boolean);
+     procedure PersistentDeleting(APersistent: TPersistent);
++    procedure PersistentDeleted; // DaThoX
+     procedure DeletePersistent(var APersistent: TPersistent);
+     procedure GetSelection(const ASelection: TPersistentSelectionList);
+     procedure SetSelection(const ASelection: TPersistentSelectionList);
+@@ -1416,6 +1419,12 @@
+                        const OnPersistentDeleting: TPropHookPersistentDeleting);
+     procedure RemoveHandlerPersistentDeleting(
+                        const OnPersistentDeleting: TPropHookPersistentDeleting);
++    // DaThoX begin
++    procedure AddHandlerPersistentDeleted(
++                       const OnPersistentDeleted: TPropHookPersistentDeleted);
++    procedure RemoveHandlerPersistentDeleted(
++                       const OnPersistentDeleted: TPropHookPersistentDeleted);
++    // DaThoX end
+     procedure AddHandlerDeletePersistent(
+                            const OnDeletePersistent: TPropHookDeletePersistent);
+     procedure RemoveHandlerDeletePersistent(
+@@ -5678,6 +5687,17 @@
+     TPropHookPersistentDeleting(FHandlers[htPersistentDeleting][i])(APersistent);
+ end;
+ 
++// DaThoX begin
++procedure TPropertyEditorHook.PersistentDeleted;
++var
++  i: Integer;
++begin
++  i:=GetHandlerCount(htPersistentDeleted);
++  while GetNextHandlerIndex(htPersistentDeleted,i) do
++    TPropHookPersistentDeleted(FHandlers[htPersistentDeleted][i])();
++end;
++// DaThoX end
++
+ procedure TPropertyEditorHook.DeletePersistent(var APersistent: TPersistent);
+ // Call this to actually free APersistent
+ // One of the hooks will free it.
+@@ -6163,6 +6183,20 @@
+   RemoveHandler(htPersistentDeleting,TMethod(OnPersistentDeleting));
+ end;
+ 
++// DaThoX begin
++procedure TPropertyEditorHook.AddHandlerPersistentDeleted(
++  const OnPersistentDeleted: TPropHookPersistentDeleted);
++begin
++  AddHandler(htPersistentDeleted,TMethod(OnPersistentDeleted));
++end;
++
++procedure TPropertyEditorHook.RemoveHandlerPersistentDeleted(
++  const OnPersistentDeleted: TPropHookPersistentDeleted);
++begin
++  RemoveHandler(htPersistentDeleted,TMethod(OnPersistentDeleted));
++end;
++// DaThoX end
++
+ procedure TPropertyEditorHook.AddHandlerDeletePersistent(
+   const OnDeletePersistent: TPropHookDeletePersistent);
+ begin
+Index: components/ideintf/srceditorintf.pas
+===================================================================
+--- components/ideintf/srceditorintf.pas	(revision 48023)
++++ components/ideintf/srceditorintf.pas	(working copy)
+@@ -218,6 +218,8 @@
+     semWindowDestroy,   // Called after removal of a Window
+     semWindowActivate,  // Window is now ActiveSourceWindow (does not vave to be focused)
+     semWindowFocused,   // The window became the active win of the application
++    semWindowShow,      // Called after a Window is shown // DaThoX
++    semWindowHide,      // Called after a Window is hidden // DaThoX
+     semEditorCreate,    // Called after a new editor was created and added to list
+     semEditorDestroy,   // Called when an Editor is destroyed / after it is removed fron the list of editors
+     semEditorActivate,  // Editor is ActiveEditor
+Index: components/ideintf/unitresources.pas
+===================================================================
+--- components/ideintf/unitresources.pas	(revision 48023)
++++ components/ideintf/unitresources.pas	(working copy)
+@@ -69,6 +69,9 @@
+ 
+ implementation
+ 
++uses
++  FormEditingIntf;
++
+ var
+   GUnitResourcefileFormats: TUnitResourcefileFormatArr;
+ 
+@@ -146,11 +149,11 @@
+   aClassName: string): TComponentClass;
+ begin
+   if CompareText(aClassName,'TForm')=0 then
+-    Result:=TForm
++    Result:=FormEditingHook.StandardDesignerBaseClasses[STD_DESIGNER_BASE_TFORM_CLASS_ID] // DaThoX
+   else if CompareText(aClassName,'TFrame')=0 then
+-    Result:=TFrame
++    Result:=FormEditingHook.StandardDesignerBaseClasses[STD_DESIGNER_BASE_TFRAME_CLASS_ID] // DaThoX
+   else if CompareText(aClassName,'TDataModule')=0 then
+-    Result:=TDataModule
++    Result:=FormEditingHook.StandardDesignerBaseClasses[STD_DESIGNER_BASE_TDATAMODULE_CLASS_ID] // DaThoX
+   else
+     Result:=nil;
+ end;
+Index: designer/controlselection.pp
+===================================================================
+--- designer/controlselection.pp	(revision 48023)
++++ designer/controlselection.pp	(working copy)
+@@ -1173,8 +1173,10 @@
+   InvalidateGrabbers;
+   OldCustomForm:=FForm;
+   FForm:=NewCustomForm;
+-  if FForm is TNonControlDesignerForm then
+-    FMediator:=TNonControlDesignerForm(FForm).Mediator
++  // DaThoX begin
++  if FForm is FormEditingHook.NonFormProxyDesignerForm[NON_CONTROL_PROXY_DESIGNER_FORM_ID] then
++    FMediator:=(FForm as INonControlDesigner).Mediator
++  // DaThoX end
+   else
+     FMediator:=nil;
+   FLookupRoot:=GetSelectionOwner;
+@@ -2813,6 +2815,12 @@
+         ARight:=ALeft+TControl(AComponent).Width;
+         ABottom:=ATop+TControl(AComponent).Height;
+       end else begin
++        // DaThoX begin
++        if Assigned(IDEComponentsMaster) then
++          if not IDEComponentsMaster.DrawNonVisualComponents(ALookupRoot) then
++            Exit;
++        // DaThoX end
++
+         ARight:=ALeft+NonVisualCompWidth;
+         ABottom:=ATop+NonVisualCompWidth;
+       end;
+Index: designer/customnonformdesigner.pas
+===================================================================
+--- designer/customnonformdesigner.pas	(revision 48023)
++++ designer/customnonformdesigner.pas	(working copy)
+@@ -31,27 +31,33 @@
+ 
+ uses
+   Classes, SysUtils, LCLProc, Graphics, GraphType, Forms, Controls,
+-  IDEProcs;
++  IDEProcs, FormEditingIntf;
+   
+ type
+ 
+   { TCustomNonFormDesignerForm }
+ 
+-  TCustomNonFormDesignerForm = class(TForm)
++  TCustomNonFormDesignerForm = class(TInterfacedObject, INonFormDesigner)
+   private
+-    FLookupRoot: TComponent;
++    //FLookupRoot: TComponent;
++    FNonFormProxyDesignerForm: TNonFormProxyDesignerForm;
+     FOnLoadBounds: TNotifyEvent;
+     FOnSaveBounds: TNotifyEvent;
+   protected
++    function GetLookupRoot: TComponent; virtual;
+     procedure SetLookupRoot(const AValue: TComponent); virtual;
+-    procedure Notification(AComponent: TComponent; Operation: TOperation);
+-         override;
++    procedure Notification(AComponent: TComponent; Operation: TOperation); virtual;
+   public
+-    constructor Create(AOwner: TComponent); override;
++    procedure Create; virtual; overload;
++    constructor Create(ANonFormProxyDesignerForm: TNonFormProxyDesignerForm); virtual; overload;
++    destructor Destroy; override;
+     procedure DoLoadBounds; virtual;
+     procedure DoSaveBounds; virtual;
++    procedure SetBounds(ALeft, ATop, AWidth, AHeight: integer); virtual;
++    procedure Paint; virtual;
+   public
+-    property LookupRoot: TComponent read FLookupRoot write SetLookupRoot;
++    property LookupRoot: TComponent read GetLookupRoot write SetLookupRoot;
++    property NonFormProxyDesignerForm: TNonFormProxyDesignerForm read FNonFormProxyDesignerForm;
+     property OnLoadBounds: TNotifyEvent read FOnLoadBounds write FOnLoadBounds;
+     property OnSaveBounds: TNotifyEvent read FOnSaveBounds write FOnSaveBounds;
+   end;
+@@ -65,11 +71,11 @@
+ 
+ function CompareNonFormDesignerForms(Data1, Data2: Pointer): integer;
+ var
+-  Form1: TCustomNonFormDesignerForm;
+-  Form2: TCustomNonFormDesignerForm;
++  Form1: INonFormDesigner;
++  Form2: INonFormDesigner;
+ begin
+-  Form1 := TCustomNonFormDesignerForm(Data1);
+-  Form2 := TCustomNonFormDesignerForm(Data2);
++  Form1 := TNonFormProxyDesignerForm(Data1) as INonFormDesigner;
++  Form2 := TNonFormProxyDesignerForm(Data2) as INonFormDesigner;
+   Result := PtrInt(Form1.LookupRoot) - PtrInt(Form2.LookupRoot);
+ end;
+ 
+@@ -76,31 +82,36 @@
+ function CompareLookupRootAndNonFormDesignerForm(Key, Data: Pointer): integer;
+ var
+   LookupRoot: TComponent;
+-  Form: TCustomNonFormDesignerForm;
++  Form: INonFormDesigner;
+ begin
+   LookupRoot := TComponent(Key);
+-  Form := TCustomNonFormDesignerForm(Data);
++  Form := TNonFormProxyDesignerForm(Data) as INonFormDesigner;
+   Result := PtrInt(LookupRoot) - PtrInt(Form.LookupRoot);
+ end;
+ 
+ { TCustomNonFormDesignerForm }
+ 
+-constructor TCustomNonFormDesignerForm.Create(AOwner: TComponent);
++//constructor TCustomNonFormDesignerForm.Create(AOwner: TComponent);
++//begin
++//  inherited CreateNew(AOwner, 1);
++//end;
++
++function TCustomNonFormDesignerForm.GetLookupRoot: TComponent;
+ begin
+-  inherited CreateNew(AOwner, 1);
++  Result := FNonFormProxyDesignerForm.LookupRoot;
+ end;
+ 
+ procedure TCustomNonFormDesignerForm.SetLookupRoot(const AValue: TComponent);
+ begin
+-  if FLookupRoot = AValue then 
++  if FNonFormProxyDesignerForm.LookupRoot = AValue then
+     Exit;
+-  if FLookupRoot<>nil then
+-    FLookupRoot.RemoveFreeNotification(Self);
++  if FNonFormProxyDesignerForm.LookupRoot<>nil then
++    FNonFormProxyDesignerForm.LookupRoot.RemoveFreeNotification(FNonFormProxyDesignerForm);
+   DoSaveBounds;
+-  FLookupRoot := AValue;
+-  if FLookupRoot <> nil then begin
+-    FLookupRoot.FreeNotification(Self);
+-    Caption := FLookupRoot.Name;
++  FNonFormProxyDesignerForm.LookupRoot := AValue;
++  if FNonFormProxyDesignerForm.LookupRoot <> nil then begin
++    FNonFormProxyDesignerForm.LookupRoot.FreeNotification(FNonFormProxyDesignerForm);
++    FNonFormProxyDesignerForm.Caption := FNonFormProxyDesignerForm.LookupRoot.Name;
+   end;
+   DoLoadBounds;
+ end;
+@@ -108,23 +119,48 @@
+ procedure TCustomNonFormDesignerForm.Notification(AComponent: TComponent;
+   Operation: TOperation);
+ begin
+-  inherited Notification(AComponent, Operation);
+   if Operation=opRemove then begin
+-    if AComponent=FLookupRoot then FLookupRoot:=nil;
++    if AComponent=FNonFormProxyDesignerForm.LookupRoot then FNonFormProxyDesignerForm.LookupRoot:=nil;
+   end;
+ end;
+ 
++constructor TCustomNonFormDesignerForm.Create(
++  ANonFormProxyDesignerForm: TNonFormProxyDesignerForm);
++begin
++  FNonFormProxyDesignerForm := ANonFormProxyDesignerForm;
++end;
++
++destructor TCustomNonFormDesignerForm.Destroy;
++begin
++  inherited Destroy;
++end;
++
++procedure TCustomNonFormDesignerForm.Create;
++begin
++  inherited Create;
++end;
++
+ procedure TCustomNonFormDesignerForm.DoLoadBounds;
+ begin
+-  if Assigned(OnLoadBounds) then 
++  if Assigned(OnLoadBounds) then
+     OnLoadBounds(Self);
+ end;
+ 
+ procedure TCustomNonFormDesignerForm.DoSaveBounds;
+ begin
+-  if Assigned(OnSaveBounds) then 
++  if Assigned(OnSaveBounds) then
+     OnSaveBounds(Self);
+ end;
+ 
++procedure TCustomNonFormDesignerForm.SetBounds(ALeft, ATop, AWidth,
++  AHeight: integer);
++begin
++end;
++
++procedure TCustomNonFormDesignerForm.Paint;
++begin
++
++end;
++
+ end.
+ 
+Index: designer/designer.pp
+===================================================================
+--- designer/designer.pp	(revision 48023)
++++ designer/designer.pp	(working copy)
+@@ -71,6 +71,7 @@
+     const NewName: string) of object;
+   TOnProcessCommand = procedure(Sender: TObject; Command: word;
+     var Handled: boolean) of object;
++  TOnComponentAdded = procedure(Sender: TObject; AComponent: TComponent; ARegisteredComponent: TRegisteredComponent) of object;  // DaThoX
+ 
+   TDesignerFlag = (
+     dfHasSized,
+@@ -121,7 +122,7 @@
+     FOnSaveAsXML: TNotifyEvent;
+     FOnSetDesigning: TOnSetDesigning;
+     FOnShowOptions: TNotifyEvent;
+-    FOnComponentAdded: TNotifyEvent;
++    FOnComponentAdded: TOnComponentAdded; // DaThoX
+     FOnViewLFM: TNotifyEvent;
+     FShiftState: TShiftState;
+     FTheFormEditor: TCustomFormEditor;
+@@ -340,6 +341,7 @@
+     property IsControl: Boolean read GetIsControl write SetIsControl;
+     property Mediator: TDesignerMediator read FMediator write SetMediator;
+     property ProcessingDesignerEvent: Integer read FProcessingDesignerEvent;
++    
+     property OnActivated: TNotifyEvent read FOnActivated write FOnActivated;
+     property OnCloseQuery: TNotifyEvent read FOnCloseQuery write FOnCloseQuery;
+     property OnPersistentDeleted: TOnPersistentDeleted
+@@ -361,8 +363,8 @@
+     property OnRenameComponent: TOnRenameComponent
+                                read FOnRenameComponent write FOnRenameComponent;
+     property OnSetDesigning: TOnSetDesigning read FOnSetDesigning write FOnSetDesigning;
+-    property OnComponentAdded: TNotifyEvent read FOnComponentAdded
+-                                           write FOnComponentAdded;
++    property OnComponentAdded: TOnComponentAdded read FOnComponentAdded
++                                           write FOnComponentAdded; // DaThoX
+     property OnShowOptions: TNotifyEvent read FOnShowOptions write FOnShowOptions;
+     property OnViewLFM: TNotifyEvent read FOnViewLFM write FOnViewLFM;
+     property OnSaveAsXML: TNotifyEvent read FOnSaveAsXML write FOnSaveAsXML;
+@@ -476,6 +478,12 @@
+   else
+     IsNonVisual := DesignerProcs.ComponentIsNonVisual(Child);
+ 
++  // DaThox begin
++  if IsNonVisual and Assigned(IDEComponentsMaster) then
++    if not IDEComponentsMaster.DrawNonVisualComponents(Root) then
++      Exit;
++  // DaThoX end
++
+   if Child.InheritsFrom(MinClass) and (IsNonVisual or not OnlyNonVisual) then
+   begin
+     Best := Child;
+@@ -618,17 +626,21 @@
+ constructor TDesigner.Create(TheDesignerForm: TCustomForm;
+   AControlSelection: TControlSelection);
+ var
++  LNonControlDesigner: INonControlDesigner; // DaThoX
+   i: integer;
+ begin
+   inherited Create;
+   //debugln(['TDesigner.Create Self=',dbgs(Pointer(Self)),' TheDesignerForm=',DbgSName(TheDesignerForm)]);
+   FForm := TheDesignerForm;
+-  if FForm is TNonControlDesignerForm then begin
+-    FLookupRoot := TNonControlDesignerForm(FForm).LookupRoot;
+-    Mediator:=TNonControlDesignerForm(FForm).Mediator;
++// DaThoX begin
++  if FForm is BaseFormEditor1.NonFormProxyDesignerForm[NON_CONTROL_PROXY_DESIGNER_FORM_ID] then begin
++    LNonControlDesigner := FForm as INonControlDesigner;
++    FLookupRoot := LNonControlDesigner.LookupRoot;
++    Mediator := LNonControlDesigner.Mediator;
+   end
+-  else if FForm is TFrameDesignerForm then
+-    FLookupRoot := TFrameDesignerForm(FForm).LookupRoot
++  else if FForm is BaseFormEditor1.NonFormProxyDesignerForm[FRAME_PROXY_DESIGNER_FORM_ID] then
++    FLookupRoot := (FForm as IFrameDesigner).LookupRoot
++// DaThoX end
+   else
+     FLookupRoot := FForm;
+ 
+@@ -2011,6 +2023,15 @@
+ 
+   if ComponentIsIcon(MouseDownComponent) then
+   begin
++    // DaThox begin
++    if Assigned(IDEComponentsMaster) then
++      if not IDEComponentsMaster.DrawNonVisualComponents(FLookupRoot) then
++      begin
++        MouseDownComponent := nil;
++        Exit;
++      end;
++    // DaThoX end
++
+     NonVisualComp := MouseDownComponent;
+     MoveNonVisualComponentIntoForm(NonVisualComp);
+   end;
+@@ -2279,7 +2300,7 @@
+     // -> select new component
+     SelectOnlyThisComponent(NewComponent);
+     if Assigned(FOnComponentAdded) then // this resets the component palette to the selection tool
+-      FOnComponentAdded(Self);
++      FOnComponentAdded(Self, NewComponent, SelectedCompClass); // DaThoX
+ 
+     {$IFDEF VerboseDesigner}
+     DebugLn('NEW COMPONENT ADDED: Form.ComponentCount=',DbgS(Form.ComponentCount),
+@@ -2905,6 +2926,8 @@
+   // call ComponentDeleted handler
+   if Assigned(FOnPersistentDeleted) then
+     FOnPersistentDeleted(Self,APersistent);
++  if Hook<>nil then // DaThoX
++    Hook.PersistentDeleted; // DaThoX
+ end;
+ 
+ procedure TDesigner.MarkPersistentForDeletion(APersistent: TPersistent);
+@@ -3088,7 +3111,9 @@
+       ADDC.Canvas.Pen.Color := GridColor;
+       ADDC.Canvas.Pen.Width := 1;
+       ADDC.Canvas.Pen.Style := psSolid;
+-      DrawGrid(ADDC.Canvas.Handle, AWinControl.ClientRect, GridSizeX, GridSizeY);
++      // Dathox
++      DrawGrid(ADDC.Canvas.Handle, TControlAccess(AWinControl).GetLogicalClientRect, GridSizeX, GridSizeY);
++      // Dathox
+     end;
+     
+     if ShowBorderSpacing then
+@@ -3574,7 +3599,11 @@
+     ControlSelection.DrawMarkers(DDC);
+   end;
+   // non visual component icons
+-  DrawNonVisualComponents(DDC);
++  // DaThoX begin
++  if not Assigned(IDEComponentsMaster) or IDEComponentsMaster.DrawNonVisualComponents(FLookupRoot) then
++  // DaThoX end
++    DrawNonVisualComponents(DDC);
++
+   // guidelines and grabbers
+   if (ControlSelection.SelectionForm=Form) then
+   begin
+Index: designer/framedesigner.pas
+===================================================================
+--- designer/framedesigner.pas	(revision 48023)
++++ designer/framedesigner.pas	(working copy)
+@@ -37,7 +37,7 @@
+ 
+   { TFrameDesignerForm }
+ 
+-  TFrameDesignerForm = class(TCustomNonFormDesignerForm)
++  TFrameDesignerForm = class(TCustomNonFormDesignerForm, INonFormDesigner, IFrameDesigner)
+   protected
+     FChangingBounds: Boolean;
+     FResizing: Boolean;
+@@ -45,7 +45,8 @@
+     procedure OnControlChangeBounds(Sender: TObject);
+     procedure OnControlResize(Sender: TObject);
+   public
+-    constructor Create(AOwner: TComponent); override;
++    procedure Create; override;
++    constructor Create(ANonFormProxyDesignerForm: TNonFormProxyDesignerForm); override;
+     destructor Destroy; override;
+     procedure DoLoadBounds; override;
+     procedure DoSaveBounds; override;
+@@ -57,14 +58,6 @@
+ 
+ { TFrameDesignerForm }
+ 
+-constructor TFrameDesignerForm.Create(AOwner: TComponent);
+-begin
+-  Position := poDesigned; 
+-  inherited Create(AOwner);
+-  // workaround problem with out assumption that Width = ClientWidth, Height = ClientHeight
+-  AutoScroll := False; 
+-end;
+-
+ destructor TFrameDesignerForm.Destroy;
+ begin
+   if LookupRoot is TControl then
+@@ -82,7 +75,7 @@
+   if (AValue is TControl) then
+   begin
+     AControl := TControl(AValue);
+-    AControl.Parent := Self;
++    AControl.Parent := NonFormProxyDesignerForm;
+     AControl.AddHandlerOnChangeBounds(@OnControlChangeBounds, True);
+     AControl.AddHandlerOnResize(@OnControlResize, True);
+   end;
+@@ -94,6 +87,9 @@
+   AControl: TControl;
+   a: TAnchorKind;
+ begin
++  //if not (nfdokSetBounds in NonFormProxyDesignerForm.NonFormDesignerOptions) then
++  //  Exit;
++
+   if FChangingBounds then Exit;
+   AControl := TControl(LookupRoot);
+   FChangingBounds := True;
+@@ -102,7 +98,7 @@
+     for a := Low(TAnchorKind) to High(TAnchorKind) do
+       AControl.AnchorSide[a].Control := nil;
+     // reset left, top but save width and height
+-    AControl.SetBounds(0, 0, AControl.Width, AControl.Height);
++    NonFormProxyDesignerForm.SetLookupRootBounds(0, 0, AControl.Width, AControl.Height);
+   finally
+     FChangingBounds := False;
+   end;
+@@ -112,27 +108,56 @@
+ var
+   AControl: TControl;
+ begin
++  //if not (nfdokSetBounds in NonFormProxyDesignerForm.NonFormDesignerOptions) then
++  //  Exit;
++
+   if FResizing then Exit;
+   AControl := TControl(LookupRoot);
+   FResizing := True;
+   try
+     // update form bounds
+-    SetBounds(Left, Top, AControl.Width, AControl.Height);
++    with NonFormProxyDesignerForm do
++    SetPublishedBounds(Left, Top, AControl.Width, AControl.Height);
+   finally
+     FResizing := False;
+   end;
+ end;
+ 
++procedure TFrameDesignerForm.Create;
++begin
++  inherited Create;
++  // workaround problem with out assumption that Width = ClientWidth, Height = ClientHeight
++  NonFormProxyDesignerForm.AutoScroll := False;
++end;
++
++constructor TFrameDesignerForm.Create(
++  ANonFormProxyDesignerForm: TNonFormProxyDesignerForm);
++begin
++  inherited Create(ANonFormProxyDesignerForm);
++  NonFormProxyDesignerForm.Position := poDesigned;
++end;
++
+ procedure TFrameDesignerForm.DoLoadBounds;
+ 
+   procedure SetNewBounds(NewLeft, NewTop, NewWidth, NewHeight: integer);
+   begin
+-    if NewWidth <= 0 then NewWidth := Width;
+-    if NewHeight <= 0 then NewHeight := Height;
++    with NonFormProxyDesignerForm do
++    begin
++      if NewWidth <= 0 then NewWidth := Width;
++      if NewHeight <= 0 then NewHeight := Height;
+ 
+-    NewWidth := Max(20, Min(NewWidth, Screen.Width - 50));
+-    NewHeight := Max(20, Min(NewHeight, Screen.Height - 50));
+-    SetBounds(NewLeft, NewTop, Max(20, NewWidth), Max(NewHeight, 20));
++      if DockedDesigner then
++      begin
++        NewLeft:=Max(0,NewLeft);
++        NewTop:=Max(0,NewTop);
++      end
++      else
++      begin
++        NewWidth := Max(20, Min(NewWidth, Screen.Width - 50));
++        NewHeight := Max(20, Min(NewHeight, Screen.Height - 50));
++      end;
++      SetPublishedBounds(NewLeft, NewTop, NewWidth, NewHeight);
++    end;
+   end;
+ 
+ var
+@@ -140,6 +165,9 @@
+   NewLeft: SmallInt;
+   NewTop: SmallInt;
+ begin
++  //if not (nfdokSetBounds in NonFormProxyDesignerForm.NonFormDesignerOptions) then
++  //  Exit;
++
+   inherited;
+ 
+   if LookupRoot is TControl then
+@@ -158,12 +186,16 @@
+ 
+ procedure TFrameDesignerForm.DoSaveBounds;
+ begin
++  //if not (nfdokSetBounds in NonFormProxyDesignerForm.NonFormDesignerOptions) then
++  //  Exit;
++
+   if LookupRoot is TControl then
++  with NonFormProxyDesignerForm do
+   begin
+     // store designer position
+     LookupRoot.DesignInfo := LeftTopToDesignInfo(Left, Top);
+     // always fill the whole designer form
+-    TControl(LookupRoot).SetBounds(0, 0, Width, Height);
++    SetLookupRootBounds(0, 0, Width, Height);
+     //DebugLn(['TFrameDesignerForm.DoSaveBounds ',Left,',',Top,' ',LazLongRec(LookupRoot.DesignInfo).Lo,',',LazLongRec(LookupRoot.DesignInfo).hi]);
+   end
+   else
+@@ -174,10 +206,13 @@
+ 
+ procedure TFrameDesignerForm.SetBounds(aLeft, aTop, aWidth, aHeight: integer);
+ begin
++  //if not (nfdokSetBounds in NonFormProxyDesignerForm.NonFormDesignerOptions) then
++  //  Exit;
+   // auto apply width and height
+   inherited SetBounds(aLeft, aTop, aWidth, aHeight);
+-  if (LookupRoot is TControl) then
+-    TControl(LookupRoot).SetBounds(0, 0, Width, Height);
++  //if (LookupRoot is TControl) then
++  with NonFormProxyDesignerForm do
++    SetLookupRootBounds(0, 0, Width, Height);
+ end;
+ 
+ end.
+Index: designer/noncontroldesigner.pas
+===================================================================
+--- designer/noncontroldesigner.pas	(revision 48023)
++++ designer/noncontroldesigner.pas	(working copy)
+@@ -38,25 +38,25 @@
+ 
+   { TNonControlDesignerForm }
+ 
+-  TNonControlDesignerForm = class(TCustomNonFormDesignerForm)
++  TNonControlDesignerForm = class(TCustomNonFormDesignerForm, INonFormDesigner, INonControlDesigner)
+   private
+     FFrameWidth: integer;
+-    FMediator: TDesignerMediator;
+-    procedure SetMediator(const AValue: TDesignerMediator);
++    function GetMediator: TDesignerMediator;
++    procedure SetMediator(AValue: TDesignerMediator);
+   protected
+     procedure SetFrameWidth(const AValue: integer); virtual;
+-    procedure DoSetBounds(ALeft, ATop, AWidth, AHeight: integer); override;
+     procedure Notification(AComponent: TComponent; Operation: TOperation);
+           override;
+   public
+-    constructor Create(TheOwner: TComponent); override;
++    procedure Create; override; overload;
+     destructor Destroy; override;
+     procedure Paint; override;
++    procedure SetBounds(aLeft, aTop, aWidth, aHeight: integer); override;
+     procedure DoLoadBounds; override;
+     procedure DoSaveBounds; override;
+   public
+     property FrameWidth: integer read FFrameWidth write SetFrameWidth;
+-    property Mediator: TDesignerMediator read FMediator write SetMediator;
++    property Mediator: TDesignerMediator read GetMediator write SetMediator;
+   end;
+   
+   
+@@ -65,19 +65,27 @@
+ 
+ { TNonControlDesignerForm }
+ 
+-procedure TNonControlDesignerForm.SetMediator(const AValue: TDesignerMediator);
++function TNonControlDesignerForm.GetMediator: TDesignerMediator;
+ begin
+-  if FMediator=AValue then exit;
+-  if FMediator<>nil then begin
+-    FMediator.LCLForm:=nil;
+-    FMediator.RemoveFreeNotification(Self);
++  Result := TNonControlProxyDesignerForm(NonFormProxyDesignerForm).Mediator;
++end;
++
++procedure TNonControlDesignerForm.SetMediator(AValue: TDesignerMediator);
++begin
++  with TNonControlProxyDesignerForm(NonFormProxyDesignerForm) do
++  begin
++    if Mediator=AValue then exit;
++    if Mediator<>nil then begin
++      Mediator.LCLForm:=nil;
++      Mediator.RemoveFreeNotification(NonFormProxyDesignerForm);
++    end;
++    Mediator:=AValue;
++    if Mediator<>nil then begin
++      Mediator.LCLForm:=NonFormProxyDesignerForm;
++      Mediator.FreeNotification(NonFormProxyDesignerForm);
++      DoLoadBounds;
++    end;
+   end;
+-  FMediator:=AValue;
+-  if FMediator<>nil then begin
+-    FMediator.LCLForm:=Self;
+-    FMediator.FreeNotification(Self);
+-    DoLoadBounds;
+-  end;
+ end;
+ 
+ procedure TNonControlDesignerForm.SetFrameWidth(const AValue: integer);
+@@ -85,15 +93,15 @@
+   if FFrameWidth = AValue then 
+     Exit;
+   FFrameWidth := AValue;
+-  Invalidate;
++  NonFormProxyDesignerForm.Invalidate;
+ end;
+ 
+-procedure TNonControlDesignerForm.DoSetBounds(ALeft, ATop, AWidth,
+-  AHeight: integer);
++procedure TNonControlDesignerForm.SetBounds(aLeft, aTop, aWidth,
++  aHeight: integer);
+ begin
+-  inherited DoSetBounds(ALeft, ATop, AWidth, AHeight);
++  inherited SetBounds(ALeft, ATop, AWidth, AHeight);
+   if Mediator<>nil then
+-    Mediator.SetFormBounds(LookupRoot,BoundsRect,ClientRect);
++    Mediator.SetFormBounds(LookupRoot,NonFormProxyDesignerForm.BoundsRect,NonFormProxyDesignerForm.ClientRect);
+ end;
+ 
+ procedure TNonControlDesignerForm.Notification(AComponent: TComponent;
+@@ -101,21 +109,22 @@
+ begin
+   inherited Notification(AComponent, Operation);
+   if Operation=opRemove then begin
+-    if FMediator=AComponent then FMediator:=nil;
++    if Mediator=AComponent then Mediator:=nil;
+   end;
+ end;
+ 
+-constructor TNonControlDesignerForm.Create(TheOwner: TComponent);
++procedure TNonControlDesignerForm.Create;
+ begin
+-  inherited Create(TheOwner);
++  inherited;
+   FFrameWidth := 1;
+-  ControlStyle := ControlStyle - [csAcceptsControls];
++  NonFormProxyDesignerForm.ControlStyle := NonFormProxyDesignerForm.ControlStyle - [csAcceptsControls];
+ end;
+ 
+ destructor TNonControlDesignerForm.Destroy;
+ begin
+   try
+-    FreeAndNil(FMediator);
++    Mediator.Free;
++    Mediator := nil;
+   except
+     on E: Exception do begin
+       debugln(['TNonControlDesignerForm.Destroy freeing mediator failed: ',E.Message]);
+@@ -129,15 +138,16 @@
+   ARect: TRect;
+ begin
+   inherited Paint;
++  with NonFormProxyDesignerForm do
+   with Canvas do begin
+     if LookupRoot is TDataModule then
+     begin
+       Brush.Color:=clWhite;
+       ARect:=Rect(FrameWidth,FrameWidth,
+-          Self.ClientWidth-FrameWidth,
+-          Self.ClientHeight-FrameWidth);
++          ClientWidth-FrameWidth,     // DaThoX
++          ClientHeight-FrameWidth);   // DaThoX
+       FillRect(ARect);
+-      ARect:=Rect(0,0,Self.ClientWidth+1,Self.ClientHeight+1);
++      ARect:=Rect(0,0,ClientWidth+1,ClientHeight+1); // DaThoX
+       Pen.Color:=clBlack;
+       Frame3d(ARect, FrameWidth, bvLowered);
+     end;
+@@ -150,16 +160,27 @@
+ 
+   procedure SetNewBounds(NewLeft, NewTop, NewWidth, NewHeight: integer);
+   begin
+-    if NewWidth<=0 then NewWidth:=Width;
+-    if NewHeight<=0 then NewHeight:=Height;
++    with NonFormProxyDesignerForm do
++    begin
++      if NewWidth<=0 then NewWidth:=Width;
++      if NewHeight<=0 then NewHeight:=Height;
+ 
+-    NewWidth:=Max(20,Min(NewWidth,Screen.Width-50));
+-    NewHeight:=Max(20,Min(NewHeight,Screen.Height-50));
+-    NewLeft:=Max(0,Min(NewLeft,Screen.Width-NewWidth-50));
+-    NewTop:=Max(0,Min(NewTop,Screen.Height-NewHeight-50));
+-
+-    //debugln('TNonControlDesignerForm.DoLoadBounds (TDataModule) ',dbgsName(LookupRoot),' ',dbgs(NewLeft),',',dbgs(NewTop),',',dbgs(NewWidth),',',dbgs(NewHeight));
+-    SetBounds(NewLeft,NewTop,Max(20,NewWidth),Max(NewHeight,20));
++      if DockedDesigner then
++      begin
++        NewLeft:=Max(0,NewLeft);
++        NewTop:=Max(0,NewTop);
++        SetPublishedBounds(NewLeft,NewTop,Max(0,NewWidth),Max(NewHeight,0));
++      end
++      else
++      begin
++        NewWidth:=Max(20,Min(NewWidth,Screen.Width-50));
++        NewHeight:=Max(20,Min(NewHeight,Screen.Height-50));
++        NewLeft:=Max(0,Min(NewLeft,Screen.Width-NewWidth-50));
++        NewTop:=Max(0,Min(NewTop,Screen.Height-NewHeight-50));
++        SetPublishedBounds(NewLeft,NewTop,Max(20,NewWidth),Max(NewHeight,20));
++      end;
++      //debugln('TNonControlDesignerForm.DoLoadBounds (TDataModule) ',dbgsName(LookupRoot),' ',dbgs(NewLeft),',',dbgs(NewTop),',',dbgs(NewWidth),',',dbgs(NewHeight));
++    end;
+   end;
+ 
+ var
+@@ -180,7 +201,7 @@
+     NewHeight := CurDataModule.DesignSize.Y;
+     
+     SetNewBounds(NewLeft, NewTop, NewWidth, NewHeight);
+-  end else begin
++  end else with NonFormProxyDesignerForm do begin
+     if Mediator<>nil then begin
+       Mediator.GetFormBounds(LookupRoot,NewBounds,NewClientRect);
+       NewLeft:=NewBounds.Left;
+@@ -203,17 +224,23 @@
+ end;
+ 
+ procedure TNonControlDesignerForm.DoSaveBounds;
++var
++  LBoundsRect: TRect;
++  LClientRect: TRect;
+ begin
+   if LookupRoot is TDataModule then begin
+-    with TDataModule(LookupRoot) do begin
++    with NonFormProxyDesignerForm, TDataModule(LookupRoot) do begin
+       DesignOffset:=Point(Left,Top);
+       DesignSize:=Point(Width,Height);
+       //debugln('TNonControlDesignerForm.DoSaveBounds (TDataModule) ',dbgsName(LookupRoot),' ',dbgs(DesignOffset.X),',',dbgs(DesignOffset.Y));
+     end;
+-  end else if LookupRoot<>nil then begin
++  end else if LookupRoot<>nil then with NonFormProxyDesignerForm do begin
+     //debugln(['TNonControlDesignerForm.DoSaveBounds ',dbgsName(LookupRoot),' ',dbgs(Left),',',dbgs(Top),' ',DbgSName(Mediator)]);
+     if Mediator<>nil then begin
+-      Mediator.SetFormBounds(LookupRoot,BoundsRect,ClientRect);
++      LBoundsRect := Rect(Left, Top, Left + Width, Top + Height);
++      LClientRect := Rect(0, 0, Width, Height);
++
++      Mediator.SetFormBounds(LookupRoot, LBoundsRect, LClientRect);
+     end else begin
+       SetComponentLeftTopOrDesignInfo(LookupRoot,Left,Top);
+     end;
+Index: ide/codeexplorer.pas
+===================================================================
+--- ide/codeexplorer.pas	(revision 48023)
++++ ide/codeexplorer.pas	(working copy)
+@@ -243,7 +243,8 @@
+     procedure BeginUpdate;
+     procedure EndUpdate;
+     procedure CheckOnIdle;
+-    procedure KeyUp(var Key: Word; Shift: TShiftState); override;
++    // DaThoX - bugfix (was few times executed TMainIDE.mnuToggleFormUnitClicked when was override KeyUp)
++    procedure KeyDown(var Key: Word; Shift: TShiftState); override;
+     procedure Refresh(OnlyVisible: boolean);
+     procedure RefreshCode(OnlyVisible: boolean);
+     procedure RefreshDirectives(OnlyVisible: boolean);
+@@ -1871,9 +1872,10 @@
+   Refresh(true);
+ end;
+ 
+-procedure TCodeExplorerView.KeyUp(var Key: Word; Shift: TShiftState);
++// DaThoX
++procedure TCodeExplorerView.KeyDown(var Key: Word; Shift: TShiftState);
+ begin
+-  inherited KeyUp(Key, Shift);
++  inherited KeyDown(Key, Shift);
+   ExecuteIDEShortCut(Self,Key,Shift,nil);
+ end;
+ 
+Index: ide/componentlist.pas
+===================================================================
+--- ide/componentlist.pas	(revision 48023)
++++ ide/componentlist.pas	(working copy)
+@@ -85,7 +85,7 @@
+     FClassList: TStringList;
+     FKeepSelected: Boolean;
+     procedure ClearSelection;
+-    procedure ComponentWasAdded;
++    procedure ComponentWasAdded(ALookupRoot, AComponent: TComponent; ARegisteredComponent: TRegisteredComponent); // DaThoX
+     procedure DoComponentInheritence(Comp: TRegisteredComponent);
+     procedure UpdateComponentSelection;
+     procedure UpdateButtonState;
+@@ -195,7 +195,7 @@
+   end;
+ end;
+ 
+-procedure TComponentListForm.ComponentWasAdded;
++procedure TComponentListForm.ComponentWasAdded(ALookupRoot, AComponent: TComponent; ARegisteredComponent: TRegisteredComponent);
+ begin
+   ClearSelection;
+   UpdateButtonState;
+@@ -354,7 +354,7 @@
+ begin
+   AComponent:=GetSelectedComponent;
+   if AComponent<>nil then
+-    IDEComponentPalette.Selected:=AComponent;
++    IDEComponentPalette.SetSelected(AComponent, ssShift in GetKeyShiftState); // DaThoX
+   UpdateButtonState;
+ end;
+ 
+Index: ide/componentpalette.pas
+===================================================================
+--- ide/componentpalette.pas	(revision 48023)
++++ ide/componentpalette.pas	(working copy)
+@@ -164,12 +164,17 @@
+                                             var Invisible: boolean);
+     procedure SetSelected(const AValue: TRegisteredComponent); override;
+     function GetSelected: TRegisteredComponent; override;
++    // DaThoX begin
++    procedure SetMultiSelect(AValue: boolean); override;
++    function GetMultiSelect: boolean; override;
++    // DaThoX end
+   public
+     constructor Create;
+     destructor Destroy; override;
+     procedure Clear;
+     procedure ClearButtons;
+-    procedure DoAfterComponentAdded; override;
++    procedure DoAfterComponentAdded(ALookupRoot,
++      AComponent: TComponent; ARegisteredComponent: TRegisteredComponent); override; // DaThoX
+     procedure OnGetNonVisualCompIcon(Sender: TObject;
+                                      AComponent: TComponent; var Icon: TCustomBitmap);
+     function FindComponent(const CompClassName: string): TRegisteredComponent; override;
+@@ -846,6 +851,21 @@
+   Result:=FSelected;
+ end;
+ 
++// DaThoX begin
++procedure TComponentPalette.SetMultiSelect(AValue: boolean);
++begin
++  if AValue then
++    FSelectionMode := csmMulty
++  else
++    FSelectionMode := csmSingle;
++end;
++
++function TComponentPalette.GetMultiSelect: boolean;
++begin
++  Result := FSelectionMode = csmMulty;
++end;
++// DaThoX end
++
+ procedure TComponentPalette.CreatePopupMenu;
+ var
+   MenuItem: TMenuItem;
+@@ -1137,9 +1157,11 @@
+   end;
+ end;
+ 
+-procedure TComponentPalette.DoAfterComponentAdded;
++// DaThoX
++procedure TComponentPalette.DoAfterComponentAdded(ALookupRoot,
++  AComponent: TComponent; ARegisteredComponent: TRegisteredComponent);
+ begin
+-  inherited DoAfterComponentAdded;
++  inherited DoAfterComponentAdded(ALookupRoot, AComponent, ARegisteredComponent);
+   if not (ssShift in GetKeyShiftState) and (SelectionMode = csmSingle) then
+     Selected := nil;
+ end;
+Index: ide/customformeditor.pp
+===================================================================
+--- ide/customformeditor.pp	(revision 48023)
++++ ide/customformeditor.pp	(working copy)
+@@ -100,6 +100,10 @@
+                                var ComponentClass: TComponentClass);
+ 
+     function GetDesignerBaseClasses(Index: integer): TComponentClass; override;
++    // DaThoX begin
++    function GetStandardDesignerBaseClasses(Index: integer): TComponentClass; override;
++    procedure SetStandardDesignerBaseClasses(Index: integer; AValue: TComponentClass); override;
++    // DaThoX end
+     procedure OnDesignerMenuItemClick(Sender: TObject); virtual;
+     function FindNonFormFormNode(LookupRoot: TComponent): TAVLTreeNode;
+ 
+@@ -138,9 +142,9 @@
+                                 ): TJITComponentList;
+     function GetDesignerForm(APersistent: TPersistent): TCustomForm; override;
+ 
+-    function FindNonFormForm(LookupRoot: TComponent): TCustomNonFormDesignerForm;
++    function FindNonFormForm(LookupRoot: TComponent): TNonFormProxyDesignerForm; // DaThoX
+ 
+-    function CreateNonFormForm(LookupRoot: TComponent): TCustomNonFormDesignerForm;
++    function CreateNonFormForm(LookupRoot: TComponent): TNonFormProxyDesignerForm; // DaThoX
+ 
+     procedure RenameJITComponent(AComponent: TComponent;
+                                  const NewClassName: shortstring);
+@@ -175,6 +179,7 @@
+     function DescendFromDesignerBaseClass(AClass: TComponentClass): integer; override;
+     function FindDesignerBaseClassByName(const AClassName: shortstring; WithDefaults: boolean): TComponentClass; override;
+ 
++    function StandardDesignerBaseClassesCount: Integer; override; // DaThoX
+     // designers
+     function DesignerCount: integer; override;
+     function GetDesigner(Index: integer): TIDesigner; override;
+@@ -300,8 +305,8 @@
+   end;
+   
+ 
+-const
+-  StandardDesignerBaseClasses: array[1..3] of TComponentClass = 
++var // DaThoX
++  StandardDesignerBaseClasses: array[0..2] of TComponentClass =
+   (
+     Forms.TForm,
+     TDataModule,
+@@ -459,7 +464,7 @@
+   FSelection := TPersistentSelectionList.Create;
+   FDesignerBaseClasses:=TFPList.Create;
+   FDesignerMediatorClasses:=TFPList.Create;
+-  for l:=Low(StandardDesignerBaseClasses) to High(StandardDesignerBaseClasses) do
++  for l:=0 to StandardDesignerBaseClassesCount - 1 do // DaThoX
+     FDesignerBaseClasses.Add(StandardDesignerBaseClasses[l]);
+ 
+   JITFormList := TJITForms.Create(nil);
+@@ -563,7 +568,7 @@
+     end else if JITNonFormList.IsJITNonForm(AComponent) then begin
+       // free/unbind a non form component and its designer form
+       aForm:=GetDesignerForm(AComponent);
+-      if (AForm<>nil) and (not (AForm is TCustomNonFormDesignerForm)) then
++      if (AForm<>nil) and (not (AForm is TNonFormProxyDesignerForm)) then // DaThoX
+         RaiseException(Format(
+           lisCFETCustomFormEditorDeleteComponentWhereIsTheTCustomN, [AComponent.
+           ClassName]));
+@@ -571,7 +576,7 @@
+       if (AForm <> nil) then
+       begin
+         FNonFormForms.Remove(AForm);
+-        TCustomNonFormDesignerForm(AForm).LookupRoot := nil;
++        (AForm as INonFormDesigner).LookupRoot := nil; // DaThoX
+         Application.ReleaseComponent(AForm);
+       end;
+ 
+@@ -593,6 +598,7 @@
+       DebugLn(['TCustomFormEditor.DeleteComponent Hiding: ',dbgsName(AWinControl)]);
+     end;
+   end;
++  PropertyEditorHook.PersistentDeleted; // DaThoX
+ end;
+ 
+ function TCustomFormEditor.FindComponentByName(const Name: ShortString
+@@ -808,38 +814,51 @@
+     exit;
+ end;
+ 
+-function TCustomFormEditor.FindNonFormForm(LookupRoot: TComponent): TCustomNonFormDesignerForm;
++// DaThoX
++function TCustomFormEditor.FindNonFormForm(LookupRoot: TComponent): TNonFormProxyDesignerForm;
+ var
+   AVLNode: TAVLTreeNode;
+ begin
+   AVLNode := FindNonFormFormNode(LookupRoot);
+   if AVLNode <> nil then
+-    Result := TCustomNonFormDesignerForm(AVLNode.Data)
++    Result := TNonFormProxyDesignerForm(AVLNode.Data) // DaThoX
+   else
+     Result := nil;
+ end;
+ 
+-function TCustomFormEditor.CreateNonFormForm(LookupRoot: TComponent): TCustomNonFormDesignerForm;
++// DaThoX
++function TCustomFormEditor.CreateNonFormForm(LookupRoot: TComponent): TNonFormProxyDesignerForm;
+ var
+   MediatorClass: TDesignerMediatorClass;
++  LNonFormProxyDesignerClass: TNonFormProxyDesignerFormClass; // DaThoX
+ begin
+   if FindNonFormFormNode(LookupRoot) <> nil then
+     RaiseException(lisCFETCustomFormEditorCreateNonFormFormAlreadyExists);
+   if LookupRoot is TComponent then
+   begin
++    // DaThoX begin
+     if LookupRoot is TCustomFrame then
+-      Result := TFrameDesignerForm.Create(nil)
++    begin
++      LNonFormProxyDesignerClass := BaseFormEditor1.NonFormProxyDesignerForm[FRAME_PROXY_DESIGNER_FORM_ID];
++      Result := TNonFormProxyDesignerForm(LNonFormProxyDesignerClass.NewInstance);
++      Result.Create(nil, TFrameDesignerForm.Create(Result));
++    end
+     else
+-      Result := TNonControlDesignerForm.Create(nil);
++    begin
++      LNonFormProxyDesignerClass := BaseFormEditor1.NonFormProxyDesignerForm[NON_CONTROL_PROXY_DESIGNER_FORM_ID];
++      Result := TNonFormProxyDesignerForm(LNonFormProxyDesignerClass.NewInstance);
++      Result.Create(nil, TNonControlDesignerForm.Create(Result));
++    end;
++    // DaThoX end
+     Result.Name:='_Designer_'+LookupRoot.Name;
+-    Result.LookupRoot := LookupRoot;
++    (Result as INonFormDesigner).LookupRoot := LookupRoot;
+     FNonFormForms.Add(Result);
+ 
+-    if Result is TNonControlDesignerForm then begin
++    if Result is BaseFormEditor1.NonFormProxyDesignerForm[NON_CONTROL_PROXY_DESIGNER_FORM_ID] then begin
+       // create the mediator
+       MediatorClass:=GetDesignerMediatorClass(TComponentClass(LookupRoot.ClassType));
+       if MediatorClass<>nil then
+-        TNonControlDesignerForm(Result).Mediator:=MediatorClass.CreateMediator(nil,LookupRoot);
++        (Result as INonControlDesigner).Mediator:=MediatorClass.CreateMediator(nil,LookupRoot);
+     end;
+   end else
+     RaiseException(Format(lisCFETCustomFormEditorCreateNonFormFormUnknownType, [
+@@ -870,7 +889,7 @@
+ 
+ procedure TCustomFormEditor.UpdateDesignerFormName(AComponent: TComponent);
+ var
+-  ANonFormForm: TCustomNonFormDesignerForm;
++  ANonFormForm: TNonFormProxyDesignerForm; // DaThoX
+ begin
+   ANonFormForm := FindNonFormForm(AComponent);
+   //DebugLn(['TCustomFormEditor.UpdateDesignerFormName ',ANonFormForm<>nil, ' ',AComponent.Name]);
+@@ -917,11 +936,11 @@
+ 
+ procedure TCustomFormEditor.SaveHiddenDesignerFormProperties(AComponent: TComponent);
+ var
+-  NonFormForm: TCustomNonFormDesignerForm;
++  NonFormForm: TNonFormProxyDesignerForm; // DaThoX
+ begin
+   NonFormForm := FindNonFormForm(AComponent);
+   if NonFormForm <> nil then
+-    NonFormForm.DoSaveBounds;
++    (NonFormForm as INonFormDesigner).DoSaveBounds; // DaThoX
+ end;
+ 
+ function TCustomFormEditor.FindJITComponentByClassName(
+@@ -1664,7 +1683,7 @@
+ var
+   l: Integer;
+ begin
+-  for l:=Low(StandardDesignerBaseClasses) to High(StandardDesignerBaseClasses)
++  for l := 0 to StandardDesignerBaseClassesCount - 1 // DaThoX
+   do
+     if StandardDesignerBaseClasses[l]=AClass then
+       RaiseGDBException('TCustomFormEditor.UnregisterDesignerBaseClass');
+@@ -1690,11 +1709,31 @@
+   const AClassName: shortstring; WithDefaults: boolean): TComponentClass;
+ var
+   i: Integer;
++
++  // DaThoX begin
++  function SearchInParent(AParent: TComponentClass): TComponentClass;
++  begin
++    Result := nil;
++    while AParent <> nil do
++    begin
++      if CompareText(AClassName,AParent.ClassName)=0 then
++        begin
++          Result:=AParent;
++          exit;
++        end;
++      AParent:=TComponentClass(AParent.ClassParent);
++      if AParent = TComponent then
++        Exit;
++    end;
++  end;
++  // DaThoX end
++
+ begin
+   if WithDefaults then begin
+-    for i:=Low(StandardDesignerBaseClasses) to high(StandardDesignerBaseClasses)
++    for i := 0 to StandardDesignerBaseClassesCount - 1 // DaThoX
+     do begin
+-      if CompareText(AClassName,StandardDesignerBaseClasses[i].ClassName)=0 then
++      Result := SearchInParent(StandardDesignerBaseClasses[i]); // DaThoX
++      if Result <> nil then
+       begin
+         Result:=StandardDesignerBaseClasses[i];
+         exit;
+@@ -1708,6 +1747,13 @@
+   Result:=nil;
+ end;
+ 
++// DaThoX begin
++function TCustomFormEditor.StandardDesignerBaseClassesCount: Integer;
++begin
++  Result := Succ(High(CustomFormEditor.StandardDesignerBaseClasses) - Low(CustomFormEditor.StandardDesignerBaseClasses));
++end;
++// DaThoX end
++
+ procedure TCustomFormEditor.FindDefineProperty(
+   const APersistentClassName, AncestorClassName, Identifier: string;
+   var IsDefined: boolean);
+@@ -2180,6 +2226,20 @@
+   Result:=TComponentClass(FDesignerBaseClasses[Index]);
+ end;
+ 
++// DaThoX begin
++function TCustomFormEditor.GetStandardDesignerBaseClasses(Index: integer
++  ): TComponentClass;
++begin
++  Result := CustomFormEditor.StandardDesignerBaseClasses[Index];
++end;
++
++procedure TCustomFormEditor.SetStandardDesignerBaseClasses(Index: integer;
++  AValue: TComponentClass);
++begin
++  CustomFormEditor.StandardDesignerBaseClasses[Index] := AValue;
++end;
++// DaThoX end
++
+ procedure TCustomFormEditor.FrameCompGetCreationClass(Sender: TObject;
+   var NewComponentClass: TComponentClass);
+ begin
+@@ -2296,7 +2356,7 @@
+   i: Integer;
+   CurComponent: TComponent;
+   P: TPoint;
+-  AForm: TCustomNonFormDesignerForm;
++  AForm: TNonFormProxyDesignerForm; // DaThoX
+   MinX: Integer;
+   MinY: Integer;
+   MaxX: Integer;
+@@ -2420,8 +2480,8 @@
+   DesignerForm := GetDesignerForm(APersistent);
+ 
+   // ask TMediator
+-  if DesignerForm is TNonControlDesignerForm then begin
+-    Mediator:=TNonControlDesignerForm(DesignerForm).Mediator;
++  if DesignerForm is BaseFormEditor1.NonFormProxyDesignerForm[NON_CONTROL_PROXY_DESIGNER_FORM_ID] then begin // DaThoX
++    Mediator:=(DesignerForm as INonControlDesigner).Mediator; // DaThoX
+     if Mediator<>nil then
+       Mediator.GetObjInspNodeImageIndex(APersistent, AImageIndex);
+   end;
+Index: ide/main.pp
+===================================================================
+--- ide/main.pp	(revision 48023)
++++ ide/main.pp	(working copy)
+@@ -70,6 +70,8 @@
+   FileUtil, LResources, Forms, Buttons, Menus, Controls, GraphType,
+   HelpIntfs, Graphics, ExtCtrls, Dialogs, InterfaceBase, UTF8Process, LazLogger,
+   lazutf8classes, LazFileCache,
++  // DaThoX
++  EditBtn, Clipbrd, StdCtrls,
+   // codetools
+   FileProcs, FindDeclarationTool, LinkScanner, BasicCodeTools, CodeToolsStructs,
+   CodeToolManager, CodeCache, DefineTemplates, KeywordFuncLists, CodeTree,
+@@ -180,6 +182,7 @@
+     procedure OnApplicationQueryEndSession(var Cancel: Boolean);
+     procedure OnApplicationEndSession(Sender: TObject);
+     procedure OnScreenChangedForm(Sender: TObject; Form: TCustomForm);
++    procedure OnScreenChangedControl(Sender: TObject; LastControl: TControl); // DaThoX
+     procedure OnScreenRemoveForm(Sender: TObject; AForm: TCustomForm);
+     procedure OnRemoteControlTimer(Sender: TObject);
+     procedure OnSelectFrame(Sender: TObject; var AComponentClass: TComponentClass);
+@@ -432,7 +435,6 @@
+ 
+     // ComponentPalette events
+     procedure ComponentPaletteClassSelected(Sender: TObject);
+-    // Copied from CodeTyphon
+     procedure SelComponentPageButtonClick(Sender: TObject); override;
+ 
+     // SourceNotebook events
+@@ -535,7 +537,7 @@
+     // designer events
+     procedure OnDesignerGetSelectedComponentClass(Sender: TObject;
+                                  var RegisteredComponent: TRegisteredComponent);
+-    procedure OnDesignerComponentAdded(Sender: TObject);
++    procedure OnDesignerComponentAdded(Sender: TObject; AComponent: TComponent; ARegisteredComponent: TRegisteredComponent); // DaThoX
+     procedure OnDesignerSetDesigning(Sender: TObject; Component: TComponent;
+                                      Value: boolean);
+     procedure OnDesignerShowOptions(Sender: TObject);
+@@ -809,6 +811,9 @@
+                               DirectiveList: TStrings): TModalResult;
+ 
+     // useful information methods
++    // DaThoX
++    procedure GetUnit(SourceEditor: TSourceEditor; out UnitInfo: TUnitInfo);
++    // DaThoX
+     procedure GetCurrentUnit(out ActiveSourceEditor: TSourceEditor;
+                              out ActiveUnitInfo: TUnitInfo); override;
+     procedure GetDesignerUnit(ADesigner: TDesigner;
+@@ -917,7 +922,12 @@
+     // form editor and designer
+     procedure DoBringToFrontFormOrUnit;
+     procedure DoBringToFrontFormOrInspector(ForceInspector: boolean);
+-    procedure DoShowDesignerFormOfCurrentSrc; override;
++    // DaThoX begin
++    procedure DoShowDesignerFormOfCurrentSrc(AComponentPaletteClassSelected: Boolean); override;
++    procedure DoShowDesignerFormOfSrc(AEditor: TSourceEditorInterface); override;
++    procedure DoShowMethod(AEditor: TSourceEditorInterface; const AMethodName: String); override;
++    procedure DoShowDesignerFormOfSrc(AEditor: TSourceEditorInterface; out AForm: TCustomForm); override;
++    // DaThoX end
+     procedure DoShowSourceOfActiveDesignerForm;
+     procedure SetDesigning(AComponent: TComponent; Value: Boolean);
+     procedure SetDesignInstance(AComponent: TComponent; Value: Boolean);
+@@ -936,6 +946,13 @@
+     procedure LoadDesktopSettings(TheEnvironmentOptions: TEnvironmentOptions);
+     procedure SaveDesktopSettings(TheEnvironmentOptions: TEnvironmentOptions);
+     procedure PackageTranslated(APackage: TLazPackage); override;
++    //......................for CT ExtentIDE.......................
++    //================ ct9999 =================
++    procedure exMainIDEOpenPackageFileClick(Sender: TObject);
++    procedure exMainIDEPkgGraphClick(Sender: TObject);
++    procedure exMainIDESearchFindClick(Sender: TObject);
++    procedure exMainIDESearchReplaceClick(Sender: TObject);
++    //......................for CT ExtentIDE.......................
+   end;
+ 
+ 
+@@ -947,6 +964,11 @@
+ 
+ implementation
+ 
++// DaThoX begin
++type
++  TIDEDockMasterAccess = class(TIDEDockMaster);
++// DaThoX end
++
+ var
+   ParamBaseDirectory: string = '';
+   SkipAutoLoadingLastProject: boolean = false;
+@@ -1473,6 +1495,9 @@
+   end else
+     MainIDEBar.Constraints.MaxHeight:=85;
+ 
++//==================== ct9999 ================================== for CodeTyphon Studio
++  MainIDEBar.Constraints.MaxHeight:=200;
++//========================================================
+   MainIDEBar.Name := NonModalIDEWindowNames[nmiwMainIDEName];
+   FormCreator:=IDEWindowCreators.Add(MainIDEBar.Name);
+   FormCreator.Right:='100%';
+@@ -1491,8 +1516,8 @@
+   try
+     SetupStandardIDEMenuItems;
+     SetupMainMenu;
++    SetupComponentPalette; // dathox - move one up
+     SetupSpeedButtons;
+-    SetupComponentPalette;
+     ConnectMainBarEvents;
+   finally
+     MainIDEBar.EnableAutoSizing{$IFDEF DebugDisableAutoSizing}('TMainIDE.Create'){$ENDIF};
+@@ -1551,6 +1576,7 @@
+   Application.AddOnEndSessionHandler(@OnApplicationEndSession);
+   Screen.AddHandlerRemoveForm(@OnScreenRemoveForm);
+   Screen.AddHandlerActiveFormChanged(@OnScreenChangedForm);
++  Screen.AddHandlerActiveControlChanged(@OnScreenChangedControl); // DaThoX
+   TComponentPalette(IDEComponentPalette).OnClassSelected := @ComponentPaletteClassSelected;
+   SetupHints;
+   SetupIDEWindowsLayout;
+@@ -2000,92 +2026,18 @@
+   end;
+ end;
+ 
+-{------------------------------------------------------------------------------}
+-procedure TMainIDE.SetupSpeedButtons;
++//================================================================================
++//======================= For CodeTyphon =========================================
++//================================================================================
++// ct9999
+ 
+-  function CreateButton(AToolBar: TToolBar; const AName, APixName: String;
+-    const AOnClick: TNotifyEvent; const AHint: String): TToolButton;
+-  begin
+-    Result := TToolButton.Create(OwningComponent);
+-    with Result do
+-    begin
+-      Name := AName;
+-      Parent := AToolBar;
+-      Enabled := True;
+-      OnClick := AOnClick;
+-      ImageIndex := IDEImages.LoadImage(16, APixName);
+-      Hint := AHint;
+-    end;
+-  end;
++{$I ct_main.inc}
+ 
+-  function CreateDivider(AToolBar: TToolBar): TToolButton;
+-  begin
+-    Result := TToolButton.Create(OwningComponent);
+-    with Result do
+-    begin
+-      Style := tbsDivider;
+-      AutoSize := True;
+-      Parent := AToolBar;
+-    end;
+-  end;
++//================================================================================
++//================================================================================
++//================================================================================
+ 
+-  function CreateToolBar(AName: String): TToolBar;
+-  begin
+-    Result := TToolBar.Create(OwningComponent);
+-    Result.Name := AName;
+-    Result.Parent := MainIDEBar.pnlSpeedButtons;
+-    Result.Images := IDEImages.Images_16;
+-    Result.AutoSize := true;
+-  end;
+ 
+-begin
+-  // Panel for buttons on the left
+-  MainIDEBar.pnlSpeedButtons := TPanel.Create(OwningComponent);
+-  with MainIDEBar.pnlSpeedButtons do 
+-  begin
+-    Name := 'pnlSpeedButtons';
+-    Parent := MainIDEBar;
+-    Align := alLeft;
+-    Caption := '';
+-    BevelOuter := bvNone;
+-    AutoSize := true;
+-    Visible := EnvironmentOptions.IDESpeedButtonsVisible;
+-  end;
+-
+-  MainIDEBar.tbViewDebug := CreateToolBar('tbViewDebug');
+-  MainIDEBar.tbStandard := CreateToolBar('tbStandard');
+-
+-  MainIDEBar.NewUnitSpeedBtn     := CreateButton(MainIDEBar.tbStandard , 'NewUnitSpeedBtn'    , 'item_unit'                 , @mnuNewUnitClicked, lisMenuNewUnit);
+-  MainIDEBar.NewFormSpeedBtn     := CreateButton(MainIDEBar.tbStandard , 'NewFormSpeedBtn'    , 'item_form'                 , @mnuNewFormClicked, lisMenuNewForm);
+-  MainIDEBar.tbDivider1          := CreateDivider(MainIDEBar.tbStandard);
+-  MainIDEBar.OpenFileSpeedBtn    := CreateButton(MainIDEBar.tbStandard , 'OpenFileSpeedBtn'   , 'laz_open'                  , @mnuOpenClicked, lisOpen);
+-  MainIDEBar.SaveSpeedBtn        := CreateButton(MainIDEBar.tbStandard , 'SaveSpeedBtn'       , 'laz_save'                  , @mnuSaveClicked, lisSave);
+-  MainIDEBar.SaveAllSpeedBtn     := CreateButton(MainIDEBar.tbStandard , 'SaveAllSpeedBtn'    , 'menu_save_all'             , @mnuSaveAllClicked, lisHintSaveAll);
+-  MainIDEBar.tbDivider2          := CreateDivider(MainIDEBar.tbStandard);
+-  MainIDEBar.ToggleFormSpeedBtn  := CreateButton(MainIDEBar.tbStandard , 'ToggleFormSpeedBtn' , 'menu_view_toggle_form_unit', @mnuToggleFormUnitCLicked, lisHintToggleFormUnit);
+-
+-  MainIDEBar.ViewUnitsSpeedBtn   := CreateButton(MainIDEBar.tbViewDebug, 'ViewUnitsSpeedBtn'  , 'menu_view_units'           , @mnuViewUnitsClicked, lisHintViewUnits);
+-  MainIDEBar.ViewFormsSpeedBtn   := CreateButton(MainIDEBar.tbViewDebug, 'ViewFormsSpeedBtn'  , 'menu_view_forms'           , @mnuViewFormsClicked, lisHintViewForms);
+-  MainIDEBar.tbDivider3          := CreateDivider(MainIDEBar.tbViewDebug);
+-  MainIDEBar.BuildModeSpeedButton:= CreateButton(MainIDEBar.tbViewDebug, 'BuildModeSpeedButton', 'menu_compiler_options'    , @mnuChgBuildModeClicked, lisChangeBuildMode);
+-  MainIDEBar.RunSpeedButton      := CreateButton(MainIDEBar.tbViewDebug, 'RunSpeedButton'     , 'menu_run'                  , @mnuRunProjectClicked, lisRunButtonHint);
+-  MainIDEBar.PauseSpeedButton    := CreateButton(MainIDEBar.tbViewDebug, 'PauseSpeedButton'   , 'menu_pause'                , @mnuPauseProjectClicked, lisPause);
+-  MainIDEBar.StopSpeedButton     := CreateButton(MainIDEBar.tbViewDebug, 'StopSpeedButton'    , 'menu_stop'                 , @mnuStopProjectClicked, lisStop);
+-  MainIDEBar.StepIntoSpeedButton := CreateButton(MainIDEBar.tbViewDebug, 'StepIntoSpeedButton', 'menu_stepinto'             , @mnuStepIntoProjectClicked, lisHintStepInto);
+-  MainIDEBar.StepOverSpeedButton := CreateButton(MainIDEBar.tbViewDebug, 'StepOverpeedButton' , 'menu_stepover'             , @mnuStepOverProjectClicked, lisHintStepOver);
+-  MainIDEBar.StepOutSpeedButton  := CreateButton(MainIDEBar.tbViewDebug, 'StepOutSpeedButton' , 'menu_stepout'              , @mnuStepOutProjectClicked, lisHintStepOut);
+-
+-  MainIDEBar.CreatePopupMenus(OwningComponent);
+-
+-  MainIDEBar.OpenFileSpeedBtn.Style := tbsDropDown;
+-  MainIDEBar.OpenFileSpeedBtn.DropDownMenu := MainIDEBar.OpenFilePopUpMenu;
+-  MainIDEBar.OpenFilePopupMenu.OnPopup := @OpenFilePopupMenuPopup;
+-
+-  MainIDEBar.BuildModeSpeedButton.Style:=tbsDropDown;
+-  MainIDEBar.BuildModeSpeedButton.DropdownMenu:=MainIDEBar.SetBuildModePopupMenu;
+-  MainIDEBar.SetBuildModePopupMenu.OnPopup := @SetBuildModePopupMenuPopup;
+-end;
+-
+ procedure TMainIDE.SetupDialogs;
+ begin
+   LazIDESelectDirectory:=@OnSelectDirectory;
+@@ -2839,7 +2791,12 @@
+ 
+ procedure TMainIDE.mnuToggleFormUnitClicked(Sender: TObject);
+ begin
+-  DoBringToFrontFormOrUnit;
++  // DaThoX begin
++  if IDETabMaster <> nil then
++    IDETabMaster.ToggleFormUnit
++  else
++  // DaThox end
++    DoBringToFrontFormOrUnit;
+ end;
+ 
+ procedure TMainIDE.mnuViewAnchorEditorClicked(Sender: TObject);
+@@ -3700,6 +3657,8 @@
+   {$ENDIF}
+   IDEComponentPalette.Update(False);
+   SetupHints;
++
++  DoCallNotifyHandler(lihtUpdateIDEComponentPalette, LastFormActivated); // DaThoX
+ end;
+ 
+ procedure TMainIDE.ShowDesignerForm(AForm: TCustomForm);
+@@ -5067,12 +5026,18 @@
+ 
+ procedure TMainIDE.ComponentPaletteClassSelected(Sender: TObject);
+ begin
+-  if (Screen.CustomFormZOrderCount > 1)
+-  and Assigned(Screen.CustomFormsZOrdered[1].Designer) then
++  // code below cant be handled correctly by integrated IDE
++  if
++    (IDETabMaster = nil) and // DaThoX
++    (Screen.CustomFormZOrderCount > 1)
++  and Assigned(Screen.CustomFormsZOrdered[1].Designer) then begin
+     // previous active form was designer form
+-    ShowDesignerForm(Screen.CustomFormsZOrdered[1])
+-  else
+-    DoShowDesignerFormOfCurrentSrc;
++    ShowDesignerForm(Screen.CustomFormsZOrdered[1]);
++    // dathox begin
++    DoCallShowDesignerFormOfSourceHandler(lihtShowDesignerFormOfSource, Screen.CustomFormsZOrdered[1], nil, True);
++    // dathox end
++  end else
++    DoShowDesignerFormOfCurrentSrc(True);
+ end;
+ 
+ procedure TMainIDE.SelComponentPageButtonClick(Sender: TObject);
+@@ -7775,6 +7740,16 @@
+ 
+ //-----------------------------------------------------------------------------
+ 
++// DaThoX begin
++procedure TMainIDE.GetUnit(SourceEditor: TSourceEditor; out UnitInfo: TUnitInfo);
++begin
++  if SourceEditor=nil then
++    UnitInfo:=nil
++  else
++    UnitInfo := Project1.UnitWithEditorComponent(SourceEditor);
++end;
++// DaThoX end
++
+ procedure TMainIDE.GetCurrentUnit(out ActiveSourceEditor:TSourceEditor;
+   out ActiveUnitInfo:TUnitInfo);
+ begin
+@@ -8092,7 +8067,7 @@
+   if DisplayState <> dsSource then begin
+     DoShowSourceOfActiveDesignerForm;
+   end else begin
+-    DoShowDesignerFormOfCurrentSrc;
++    DoShowDesignerFormOfCurrentSrc(false);
+   end;
+ end;
+ 
+@@ -8106,7 +8081,7 @@
+   debugln(['TMainIDE.DoBringToFrontFormOrInspector old=',dbgs(DisplayState)]);
+   {$ENDIF}
+   case DisplayState of
+-  dsInspector: DoShowDesignerFormOfCurrentSrc;
++  dsInspector: DoShowDesignerFormOfCurrentSrc(false);
+   dsInspector2: DoShowSourceOfActiveDesignerForm;
+   else
+     DoShowInspector(iwgfShowOnTop);
+@@ -8113,17 +8088,90 @@
+   end;
+ end;
+ 
+-procedure TMainIDE.DoShowDesignerFormOfCurrentSrc;
++// === DaThoX begin
++procedure TMainIDE.DoShowDesignerFormOfCurrentSrc(AComponentPaletteClassSelected: Boolean);
+ var
++  LForm: TCustomForm;
++begin
++  DoShowDesignerFormOfSrc(SourceEditorManager.ActiveEditor, LForm);
++  if LForm <> nil then
++    DoCallShowDesignerFormOfSourceHandler(lihtShowDesignerFormOfSource, LForm, SourceEditorManager.ActiveEditor, AComponentPaletteClassSelected);
++end;
++
++procedure TMainIDE.DoShowDesignerFormOfSrc(AEditor: TSourceEditorInterface);
++var
++  LForm: TCustomForm;
++begin
++  DoShowDesignerFormOfSrc(AEditor, LForm);
++end;
++
++procedure TMainIDE.DoShowMethod(AEditor: TSourceEditorInterface;
++  const AMethodName: String);
++var
++  //ActiveSrcEdit: TSourceEditor;
++  ActiveUnitInfo: TUnitInfo;
++  NewSource: TCodeBuffer;
++  NewX, NewY, NewTopLine: integer;
++  AClassName: string;
++  AInheritedMethodName: string;
++  AnInheritedClassName: string;
++  CurMethodName: String;
++begin
++  // DaThoX begin
++  if SourceEditorManagerIntf.ActiveEditor <> AEditor then
++    SourceEditorManagerIntf.ActiveEditor := AEditor;
++  // DaThoX end;
++
++  GetUnit(TSourceEditor(AEditor), ActiveUnitInfo);
++  if not BeginCodeTool(TSourceEditor(AEditor),ActiveUnitInfo,[ctfSwitchToFormSource])
++  then exit;
++  {$IFDEF IDE_DEBUG}
++  debugln('');
++  debugln('[TMainIDE.OnPropHookShowMethod] ************ "',AMethodName,'" ',ActiveUnitInfo.Filename);
++  {$ENDIF}
++
++  AClassName:=ActiveUnitInfo.Component.ClassName;
++  CurMethodName:=AMethodName;
++
++  if IsValidIdentPair(AMethodName,AnInheritedClassName,AInheritedMethodName)
++  then begin
++    AEditor:=nil;
++    ActiveUnitInfo:=Project1.UnitWithComponentClassName(AnInheritedClassName);
++    if ActiveUnitInfo=nil then begin
++      IDEMessageDialog(lisMethodClassNotFound,
++        Format(lisClassOfMethodNotFound, ['"', AnInheritedClassName, '"', '"',
++          AInheritedMethodName, '"']),
++        mtError,[mbCancel],'');
++      exit;
++    end;
++    AClassName:=AnInheritedClassName;
++    CurMethodName:=AInheritedMethodName;
++  end;
++
++  if CodeToolBoss.JumpToPublishedMethodBody(ActiveUnitInfo.Source,
++    AClassName,CurMethodName,
++    NewSource,NewX,NewY,NewTopLine) then
++  begin
++    DoJumpToCodePosition(AEditor, ActiveUnitInfo,
++      NewSource, NewX, NewY, NewTopLine, [jfAddJumpPoint, jfFocusEditor]);
++  end else begin
++    DebugLn(['TMainIDE.OnPropHookShowMethod failed finding the method in code']);
++    DoJumpToCodeToolBossError;
++    raise Exception.Create(lisUnableToShowMethod+' '+lisPleaseFixTheErrorInTheMessageWindow);
++  end;
++end;
++
++procedure TMainIDE.DoShowDesignerFormOfSrc(AEditor: TSourceEditorInterface; out
++  AForm: TCustomForm);
++var
+   ActiveSourceEditor: TSourceEditor;
+   ActiveUnitInfo: TUnitInfo;
+-  AForm: TCustomForm;
+   UnitCodeBuf: TCodeBuffer;
+ begin
+   {$IFDEF VerboseIDEDisplayState}
+   debugln(['TMainIDE.DoShowDesignerFormOfCurrentSrc ']);
+   {$ENDIF}
+-  GetCurrentUnit(ActiveSourceEditor,ActiveUnitInfo);
++  GetUnit(TSourceEditor(AEditor), ActiveUnitInfo);
+   if (ActiveUnitInfo = nil) then exit;
+ 
+   if (ActiveUnitInfo.Component=nil)
+@@ -8154,24 +8202,31 @@
+     TheControlSelection.AssignPersistent(ActiveUnitInfo.Component);
+   end;
+ end;
++// === DaThoX end
+ 
++//================ ct9999 For CodeTyphon =================================
+ procedure TMainIDE.DoShowSourceOfActiveDesignerForm;
+ var
+   ActiveUnitInfo: TUnitInfo;
++  ActiveSourceEditor: TSourceEditor;
+ begin
+   if SourceEditorManager.SourceEditorCount = 0 then exit;
+-  if LastFormActivated <> nil then begin
+-    ActiveUnitInfo := Project1.UnitWithComponent(LastFormActivated.Designer.LookupRoot);
++  if LastFormActivated <> nil then
++  begin
++    GetCurrentUnit(ActiveSourceEditor,ActiveUnitInfo);
++
+     if (ActiveUnitInfo <> nil) and (ActiveUnitInfo.OpenEditorInfoCount > 0) then
+-      SourceEditorManager.ActiveEditor :=
+-                 TSourceEditor(ActiveUnitInfo.OpenEditorInfo[0].EditorComponent);
++    begin
++      SourceEditorManager.ActiveEditor := TSourceEditor(ActiveUnitInfo.OpenEditorInfo[0].EditorComponent);
++      // DaThoX
++      DoCallNotifyHandler(lihtShowSourceOfActiveDesignerForm, SourceEditorManager.ActiveEditor);
++    end;
+   end;
++
+   SourceEditorManager.ShowActiveWindowOnTop(False);
+-  {$IFDEF VerboseIDEDisplayState}
+-  debugln(['TMainIDE.DoShowSourceOfActiveDesignerForm ']);
+-  {$ENDIF}
+   DisplayState:=dsSource;
+ end;
++//====================================================================
+ 
+ procedure TMainIDE.GetIDEFileState(Sender: TObject; const AFilename: string;
+   NeededFlags: TIDEFileStateFlags; out ResultFlags: TIDEFileStateFlags);
+@@ -8274,6 +8329,10 @@
+         IDEWindowCreators.ShowForm(MessagesView,true);
+         SourceEditorManager.ShowActiveWindowOnTop(True);
+       end;
++      // DaThoX begin
++      if IDETabMaster <> nil then
++        IDETabMaster.JumpToCompilerMessage(SrcEdit);
++      // DaThoX end
+       SrcEdit.EditorComponent.LogicalCaretXY:=LogCaretXY;
+       SrcEdit.EditorComponent.TopLine:=TopLine;
+       SrcEdit.CenterCursorHoriz(hcmSoftKeepEOL);
+@@ -8446,12 +8505,14 @@
+   RegisteredComponent:=IDEComponentPalette.Selected;
+ end;
+ 
+-procedure TMainIDE.OnDesignerComponentAdded(Sender: TObject);
++procedure TMainIDE.OnDesignerComponentAdded(Sender: TObject;
++  AComponent: TComponent; ARegisteredComponent: TRegisteredComponent);
+ var
+   Grid: TOICustomPropertyGrid;
+   Row: TOIPropertyGridRow;
+ begin
+-  TComponentPalette(IDEComponentPalette).DoAfterComponentAdded;
++  // DaThoX
++  TComponentPalette(IDEComponentPalette).DoAfterComponentAdded(TDesigner(Sender).LookupRoot, AComponent, ARegisteredComponent); // DaThoX
+   if EnvironmentOptions.CreateComponentFocusNameProperty
+   and (ObjectInspector1<>nil) then begin
+     if (ObjectInspector1.ShowFavorites) and (EnvironmentOptions.SwitchToFavoritesOITab) then
+@@ -11529,6 +11590,23 @@
+     WindowMenuActiveForm := aForm;
+ end;
+ 
++// DaThoX begin
++procedure TMainIDE.OnScreenChangedControl(Sender: TObject; LastControl: TControl);
++var
++  LOwner: TComponent;
++begin
++  if LastControl = nil then
++    Exit;
++
++  LOwner := LastControl.Owner;
++  if LOwner is TOICustomPropertyGrid then
++  case DisplayState of
++    dsSource: DisplayState:=dsInspector;
++    dsForm: DisplayState:=dsInspector2;
++  end;
++end;
++// DaThoX end
++
+ procedure TMainIDE.OnScreenRemoveForm(Sender: TObject; AForm: TCustomForm);
+ begin
+   HiddenWindowsOnRun.Remove(AForm);
+@@ -12344,34 +12422,137 @@
+ procedure TMainIDE.mnuEditCopyClicked(Sender: TObject);
+ var
+   ActiveDesigner: TComponentEditorDesigner;
++  LEdit: TCustomEdit; // DaThoX
++  LComboBox: TCustomComboBox; // DaThoX
+ begin
+-  ActiveDesigner := GetActiveDesignerSkipMainBar;
+-  if Assigned(ActiveDesigner) then
+-    ActiveDesigner.CopySelection
++  // DaThoX begin
++  // controls from ObjectInspector must be handled by PropertyGrid in ObjectInspector
++  if (Screen.ActiveControl is TCustomEdit)
++    and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++  begin
++    LEdit := TCustomEdit(Screen.ActiveControl);
++    LEdit.CopyToClipboard;
++  end
+   else
+-    DoSourceEditorCommand(ecCopy);
++  if (Screen.ActiveControl is TCustomComboBox)
++     and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++  begin
++    LComboBox := TCustomComboBox(Screen.ActiveControl);
++    Clipboard.AsText := LComboBox.SelText;
++  end
++  else
++  case DisplayState of
++    dsForm:
++      begin
++        ActiveDesigner := GetActiveDesignerSkipMainBar;
++        if Assigned(ActiveDesigner) then
++          ActiveDesigner.CopySelection;
++      end;
++    dsSource:
++        DoSourceEditorCommand(ecCopy);
++    dsInspector, dsInspector2:
++        ObjectInspector1.PropertyGrid.CopyToClipboard;
++  end;
++  // DaThoX end
++
++  // DaThoX comment //
++  //ActiveDesigner := GetActiveDesignerSkipMainBar;
++  //if Assigned(ActiveDesigner) then
++  //  ActiveDesigner.CopySelection
++  //else
++  //  DoSourceEditorCommand(ecCopy);
++  // DaThoX end
+ end;
+ 
+ procedure TMainIDE.mnuEditCutClicked(Sender: TObject);
+ var
+   ActiveDesigner: TComponentEditorDesigner;
++  LEdit: TCustomEdit; // DaThoX
++  LComboBox: TCustomComboBox; // DaThoX
+ begin
+-  ActiveDesigner := GetActiveDesignerSkipMainBar;
+-  if Assigned(ActiveDesigner) then
+-    ActiveDesigner.CutSelection
++  // DaThoX begin
++  // controls from ObjectInspector must be handled by PropertyGrid in ObjectInspector
++  if (Screen.ActiveControl is TCustomEdit)
++    and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++  begin
++    LEdit := TCustomEdit(Screen.ActiveControl);
++    LEdit.CutToClipboard;
++  end
+   else
+-    DoSourceEditorCommand(ecCut);
++  if (Screen.ActiveControl is TCustomComboBox)
++    and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++  begin
++    LComboBox := TCustomComboBox(Screen.ActiveControl);
++    Clipboard.AsText := LComboBox.SelText;
++    LComboBox.SelText := '';
++  end
++  else
++  case DisplayState of
++    dsForm:
++      begin
++        ActiveDesigner := GetActiveDesignerSkipMainBar;
++        if Assigned(ActiveDesigner) then
++          ActiveDesigner.CutSelection;
++      end;
++    dsSource:
++        DoSourceEditorCommand(ecCut);
++    dsInspector, dsInspector2:
++        ObjectInspector1.PropertyGrid.CutToClipboard;
++  end;
++  // DaThoX end
++
++  // DaThoX comment //
++  //ActiveDesigner := GetActiveDesignerSkipMainBar;
++  //if Assigned(ActiveDesigner) then
++  //  ActiveDesigner.CutSelection
++  //else
++  //  DoSourceEditorCommand(ecCut);
++  // DaThoX end
+ end;
+ 
+ procedure TMainIDE.mnuEditPasteClicked(Sender: TObject);
+ var
+   ActiveDesigner: TComponentEditorDesigner;
++  LEdit: TCustomEdit; // DaThoX
++  LComboBox: TCustomComboBox; // DaThoX
+ begin
+-  ActiveDesigner := GetActiveDesignerSkipMainBar;
+-  if Assigned(ActiveDesigner) then
+-    ActiveDesigner.PasteSelection([cpsfFindUniquePositions])
++  // DaThoX begin
++  // controls from ObjectInspector must be handled by PropertyGrid in ObjectInspector
++  if (Screen.ActiveControl is TCustomEdit)
++    and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++  begin
++    LEdit := TCustomEdit(Screen.ActiveControl);
++    LEdit.PasteFromClipboard;
++  end
+   else
+-    DoSourceEditorCommand(ecPaste);
++  if (Screen.ActiveControl is TCustomComboBox)
++    and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++  begin
++    LComboBox := TCustomComboBox(Screen.ActiveControl);
++    LComboBox.SelText := Clipboard.AsText;
++  end
++  else
++  case DisplayState of
++    dsForm:
++      begin
++        ActiveDesigner := GetActiveDesignerSkipMainBar;
++        if Assigned(ActiveDesigner) then
++          ActiveDesigner.PasteSelection([cpsfFindUniquePositions]);
++      end;
++    dsSource:
++        DoSourceEditorCommand(ecPaste);
++    dsInspector, dsInspector2:
++        ObjectInspector1.PropertyGrid.PasteFromClipboard;
++  end;
++  // DaThoX end
++
++  // DaThoX comment //
++  //ActiveDesigner := GetActiveDesignerSkipMainBar;
++  //if Assigned(ActiveDesigner) then
++  //  ActiveDesigner.PasteSelection([cpsfFindUniquePositions])
++  //else
++  //  DoSourceEditorCommand(ecPaste);
++  // DaThoX end
+ end;
+ 
+ procedure TMainIDE.mnuEditRedoClicked(Sender: TObject);
+@@ -12684,7 +12865,7 @@
+   end;
+ end;
+ 
+-procedure TMainIDE.DoSourceEditorCommand(EditorCommand: integer;
++procedure TMainIDE.DoSourceEditorCommand(EditorCommand: integer;  // 7777
+   CheckFocus: boolean; FocusEditor: boolean);
+ var
+   CurFocusControl: TWinControl;
+@@ -12696,19 +12877,54 @@
+   // check if focus is on MainIDEBar or on SourceEditor
+   if CheckFocus then
+   begin
+-    CurFocusControl:=FindOwnerControl(GetFocus);
++    // DaThoX
++    CurFocusControl := Screen.ActiveControl;
++    // DaThoX comment {
++    {CurFocusControl:=FindOwnerControl(GetFocus);
+     while (CurFocusControl<>nil) and (CurFocusControl<>MainIDEBar)
+-    and not (CurFocusControl is TSourceNotebook) do
+-      CurFocusControl:=CurFocusControl.Parent;
++    and not (CurFocusControl is TCustomForm) do
++      CurFocusControl:=CurFocusControl.Parent;}
+   end;
+   if Assigned(CurFocusControl) then
+   begin    // MainIDEBar or SourceNotebook has focus -> find active source editor
+-    GetCurrentUnit(ActiveSourceEditor,ActiveUnitInfo);
+-    if Assigned(ActiveSourceEditor) then begin
+-      ActiveSourceEditor.DoEditorExecuteCommand(EditorCommand); // pass the command
+-      if FocusEditor then
+-        ActiveSourceEditor.EditorControl.SetFocus;
+-    end;
++    // DaThoX begin
++    // If is focused ObjectInspector or TCustomEdit control (only for ecUndo and ecSelectAll).
++    // !Controls from ObjectInspector must be handled by PropertyGrid in ObjectInspector.
++    if ((EditorCommand = ecUndo) or (EditorCommand = ecSelectAll))
++      and ((CurFocusControl is TCustomEdit) or (CurFocusControl is TCustomComboBox)
++        or (DisplayState in [dsInspector, dsInspector2])) then
++    begin
++      // CustomEdit
++      if (CurFocusControl is TCustomEdit)
++        and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++      case EditorCommand of
++        ecUndo: TCustomEdit(CurFocusControl).Undo;
++        ecSelectAll: TCustomEdit(CurFocusControl).SelectAll;
++      end
++      // CustomComboBox
++      else if CurFocusControl is TCustomComboBox
++        and not (Screen.ActiveControl.Owner is TOICustomPropertyGrid) then
++      case EditorCommand of
++        ecSelectAll: TCustomComboBox(CurFocusControl).SelectAll;
++      end
++      // ObjectInspector
++      else if DisplayState in [dsInspector, dsInspector2] then
++      case EditorCommand of
++        ecUndo: ObjectInspector1.PropertyGrid.Undo;
++        ecSelectAll: ObjectInspector1.PropertyGrid.SelectAll;
++      end;
++    end
++    // DaThoX end
++    else if (CurFocusControl is TSourceNotebook) or (CurFocusControl=MainIDEBar) then
++    // MainIDEBar or SourceNotebook has focus -> find active source editor
++    begin
++      GetCurrentUnit(ActiveSourceEditor,ActiveUnitInfo);
++      if Assigned(ActiveSourceEditor) then begin
++        ActiveSourceEditor.DoEditorExecuteCommand(EditorCommand); // pass the command
++        if FocusEditor then
++          ActiveSourceEditor.EditorControl.SetFocus;
++      end;
++    end; // DaThoX
+   end;
+   // Some other window has focus -> continue processing shortcut, not handled yet
+   if (CurFocusControl=Nil) or (ActiveSourceEditor=Nil) then
+Index: ide/mainbar.pas
+===================================================================
+--- ide/mainbar.pas	(revision 48023)
++++ ide/mainbar.pas	(working copy)
+@@ -51,6 +51,7 @@
+   
+     // the speedbuttons panel for frequently used IDE functions
+     pnlSpeedButtons      : TPanel;
++    pnlToolButtons       : TPanel; // DaThoX
+     tbStandard           : TToolBar;
+       NewUnitSpeedBtn      : TToolButton;
+       NewFormSpeedBtn      : TToolButton;
+Index: ide/mainbase.pas
+===================================================================
+--- ide/mainbase.pas	(revision 48023)
++++ ide/mainbase.pas	(working copy)
+@@ -153,7 +153,7 @@
+                            Flags: TCodeToolsFlags): boolean;
+     procedure ActivateCodeToolAbortableMode;
+     function OnCodeToolBossCheckAbort: boolean;
+-    procedure DoShowDesignerFormOfCurrentSrc; virtual; abstract;
++    procedure DoShowDesignerFormOfCurrentSrc(AComponentPaletteClassSelected: Boolean); virtual; abstract; // DaThoX
+     function CreateDesignerForComponent(AnUnitInfo: TUnitInfo;
+                         AComponent: TComponent): TCustomForm; virtual; abstract;
+     procedure UpdateSaveMenuItemsAndButtons(UpdateSaveAll: boolean); virtual; abstract;
+Index: ide/sourceeditor.pp
+===================================================================
+--- ide/sourceeditor.pp	(revision 48023)
++++ ide/sourceeditor.pp	(working copy)
+@@ -684,7 +684,7 @@
+     procedure EditorChanged(Sender: TObject);
+     procedure DoClose(var CloseAction: TCloseAction); override;
+     procedure DoShow; override;
+-
++    procedure DoHide; override; // DaThoX
+   protected
+     function GetActiveCompletionPlugin: TSourceEditorCompletionPlugin; override;
+     function GetCompletionPlugins(Index: integer): TSourceEditorCompletionPlugin; override;
+@@ -861,6 +861,10 @@
+     function  GetUniqueSourceEditors(Index: integer): TSourceEditorInterface; override;
+     function GetMarklingProducers(Index: integer): TSourceMarklingProducer; override;
+     procedure SyncMessageWnd(Sender: TObject);
++    // DaThoX begin
++    procedure DoWindowShow(AWindow: TSourceNotebook);
++    procedure DoWindowHide(AWindow: TSourceNotebook);
++    // DaThoX end
+   public
+     procedure BeginAutoFocusLock;
+     procedure EndAutoFocusLock;
+@@ -6680,8 +6684,19 @@
+   // statusbar was not updated when visible=false, update now
+   if snUpdateStatusBarNeeded in States then
+     UpdateStatusBar;
++  if Assigned(Manager) and (Parent <> nil) then // DaThoX
++    Manager.DoWindowShow(Self); // DaThoX
+ end;
+ 
++// DaThoX begin
++procedure TSourceNotebook.DoHide;
++begin
++  inherited DoHide;
++  if Assigned(Manager) and (Parent <> nil) then
++    Manager.DoWindowHide(Self);
++end;
++// DaThoX end
++
+ function TSourceNotebook.IndexOfEditorInShareWith(AnOtherEditor: TSourceEditor): Integer;
+ var
+   i: Integer;
+@@ -6760,14 +6775,40 @@
+     Manager.SendEditorDestroyed(AnEditor);
+ end;
+ 
++// DaThoX begin
+ function TSourceNotebook.FindSourceEditorWithPageIndex(APageIndex: integer): TSourceEditor;
+ var
+   I: integer;
+   TempEditor: TControl;
++
++  function FindSynEdit(AControl: TWinControl): TControl;
++  var
++    I: Integer;
++  begin
++    Result := nil;
++
++    with AControl do
++      for I := 0 to ControlCount - 1 do
++      begin
++        if Controls[I] is TIDESynEditor then
++          Exit(Controls[I])
++        else
++        if Controls[I] is TWinControl then
++        begin
++          Result := FindSynEdit(TWinControl(Controls[I]));
++          if Result <> nil then
++            Exit;
++        end;
++      end;
++  end;
++
+ begin
+   Result := nil;
+   if (FSourceEditorList=nil)
+     or (APageIndex < 0) or (APageIndex >= PageCount) then exit;
++
++  TempEditor := FindSynEdit(NotebookPage[APageIndex]);
++  { DaThoX comment
+   TempEditor:=nil;
+   with NotebookPage[APageIndex] do
+     for I := 0 to ControlCount-1 do
+@@ -6776,6 +6817,7 @@
+           TempEditor := Controls[I];
+           Break;
+         end;
++  }
+   if TempEditor=nil then exit;
+   I := FSourceEditorList.Count-1;
+   while (I>=0) and (TSourceEditor(FSourceEditorList[I]).EditorComponent <> TempEditor) do
+@@ -6783,6 +6825,7 @@
+   if i<0 then exit;
+   Result := TSourceEditor(FSourceEditorList[i]);
+ end;
++// DaThoX end
+ 
+ function TSourceNotebook.GetActiveSE: TSourceEditor;
+ Begin
+@@ -7228,6 +7271,11 @@
+ 
+   if (PageCount = 0) and (Parent=nil) and not FIsClosing then
+     Close;
++
++// DaThoX begin
++  DoActiveEditorChanged;
++  Manager.ActiveEditor := Edit;
++// DaThoX end
+ end;
+ 
+ procedure TSourceNotebook.CopyEditor(OldPageIndex, NewWindowIndex,
+@@ -7528,7 +7576,10 @@
+     // Move focus from Notebook-tabs to editor
+     TempEditor:=FindSourceEditorWithPageIndex(PageIndex);
+     if IsVisible and (TempEditor <> nil) and (FUpdateLock = 0) then
+-      TempEditor.EditorComponent.SetFocus;
++    // dathox begin
++    // this line raise exception when editor is in other tab (for example - focused is designer)
++    ;//  TempEditor.EditorComponent.SetFocus;
++    // dathox end
+   finally
+     debugln(SRCED_CLOSE, ['TSourceNotebook.CloseFile UnLock']);
+     DebugBoss.UnLockCommandProcessing;
+@@ -7840,16 +7891,33 @@
+   CheckCurrentCodeBufferChanged;
+ End;
+ 
++// DaThoX begin
+ function TSourceNotebook.FindPageWithEditor(
+   ASourceEditor: TSourceEditor):integer;
++var
++  LParent: TWinControl;
++  LTabSheet: TWinControl;
+ begin
+-  if (ASourceEditor.EditorComponent.Parent is TTabSheet) and
+-     (TTabSheet(ASourceEditor.EditorComponent.Parent).Parent = FNotebook)
+-  then
+-    Result:=TTabSheet(ASourceEditor.EditorComponent.Parent).PageIndex
+-  else
++  if (ASourceEditor.EditorComponent.Parent is TTabSheet) then
++  begin
++    LParent := ASourceEditor.EditorComponent.Parent.Parent;
++    LTabSheet := ASourceEditor.EditorComponent.Parent;
++    //writeln(' FindPageWithEditor; ',FNotebook.Parent <> nil);
++    while (LParent <> FNotebook) and (LParent <> nil) do
++    begin
++      LTabSheet := LParent;
++      LParent := LParent.Parent;
++    end;
++
++    if (LParent <> nil) and (LTabSheet is TTabSheet) then
++      Result:=TTabSheet(LTabSheet).PageIndex
++    else
++      Result:=-1;
++  end
++  else    
+     Result:=-1;
+ end;
++// DaThoX end
+ 
+ function TSourceNotebook.FindSourceEditorWithEditorComponent(EditorComp: TComponent): TSourceEditor;
+ var
+@@ -8765,6 +8833,18 @@
+   Result:=TSourceMarklingProducer(fProducers[Index]);
+ end;
+ 
++// DaThoX begin
++procedure TSourceEditorManagerBase.DoWindowShow(AWindow: TSourceNotebook);
++begin
++  FChangeNotifyLists[semWindowShow].CallNotifyEvents(AWindow);
++end;
++
++procedure TSourceEditorManagerBase.DoWindowHide(AWindow: TSourceNotebook);
++begin
++  FChangeNotifyLists[semWindowHide].CallNotifyEvents(AWindow);
++end;
++// DaThoX end
++
+ procedure TSourceEditorManagerBase.SyncMessageWnd(Sender: TObject);
+ begin
+   MessagesView.MessagesFrame1.ApplyMultiSrcChanges(Sender as TETMultiSrcChanges);
+Index: ide/sourcefilemanager.pas
+===================================================================
+--- ide/sourcefilemanager.pas	(revision 48023)
++++ ide/sourcefilemanager.pas	(working copy)
+@@ -45,7 +45,9 @@
+   DiskDiffsDialog, InputHistory, CheckLFMDlg, LCLMemManager, CodeToolManager,
+   CodeToolsStructs, ConvCodeTool, CodeCache, CodeTree, FindDeclarationTool,
+   BasicCodeTools, SynEdit, UnitResources, IDEExternToolIntf, ObjectInspector,
+-  ExtToolDialog, PublishModule, etMessagesWnd;
++  ExtToolDialog, PublishModule, etMessagesWnd, 
++  FormEditingIntf // DaThoX
++  ;
+ 
+ type
+ 
+@@ -1604,6 +1606,8 @@
+   IsPartOfProject: Boolean;
+   RequiredPackages: String;
+   Src: String;
++  i: Integer; // DaThoX
++  LFindDesignerBaseClassByName: Boolean = True; // DaThoX
+ begin
+   //debugln('TLazSourceFileManager.NewFile A NewFilename=',NewFilename);
+   // empty NewFilename is ok, it will be auto generated
+@@ -1767,6 +1771,20 @@
+ 
+     // create component
+     AncestorType:=NewFileDescriptor.ResourceClass;
++    // begin DaThoX
++    if AncestorType <> nil then
++    begin
++      // loop for Inherited Items
++      for i:=0 to BaseFormEditor1.StandardDesignerBaseClassesCount - 1 do
++        if AncestorType.InheritsFrom(BaseFormEditor1.StandardDesignerBaseClasses[i]) then
++        begin
++          LFindDesignerBaseClassByName := False;
++          Break;
++        end;
++      if LFindDesignerBaseClassByName then
++        AncestorType:=FormEditor1.FindDesignerBaseClassByName(AncestorType.ClassName, True);
++    end;
++    // end DaThoX
+     //DebugLn(['TLazSourceFileManager.NewFile AncestorType=',dbgsName(AncestorType),' ComponentName',NewUnitInfo.ComponentName]);
+     if AncestorType<>nil then begin
+       ResType:=MainBuildBoss.GetResourceType(NewUnitInfo);
+@@ -1817,7 +1835,7 @@
+     if NewUnitInfo.Component<>nil then begin
+       // show form
+       IDEWindowCreators.ShowForm(DefaultObjectInspectorName,false);
+-      MainIDE.DoShowDesignerFormOfCurrentSrc;
++      MainIDE.DoShowDesignerFormOfCurrentSrc(False);
+     end else begin
+       MainIDE.DisplayState:= dsSource;
+     end;
+@@ -5945,7 +5963,7 @@
+     end;
+   end else begin
+     // default is TForm
+-    AComponentClass:=TForm;
++    AComponentClass:=BaseFormEditor1.StandardDesignerBaseClasses[STD_DESIGNER_BASE_TFORM_CLASS_ID];
+   end;
+   Result:=true;
+ end;
+@@ -6010,7 +6028,7 @@
+ 
+   // use TForm as default ancestor
+   if AncestorClass=nil then
+-    AncestorClass:=TForm;
++    AncestorClass:=BaseFormEditor1.StandardDesignerBaseClasses[STD_DESIGNER_BASE_TFORM_CLASS_ID];
+   //DebugLn('TLazSourceFileManager.LoadAncestorDependencyHidden Filename="',AnUnitInfo.Filename,'" AncestorClassName=',AncestorClassName,' AncestorClass=',dbgsName(AncestorClass));
+   Result:=mrOk;
+ end;
+Index: lcl/controls.pp
+===================================================================
+--- lcl/controls.pp	(revision 48023)
++++ lcl/controls.pp	(working copy)
+@@ -560,6 +560,7 @@
+     procedure SaveToStream(Stream: TStream); virtual; abstract;
+     procedure SetReplacingControl(Control: TControl); virtual;
+     function AutoFreeByControl: Boolean; virtual;
++    function GetChildSite: TWinControl; virtual; // DaThoX
+   end;
+ 
+   TDockManagerClass = class of TDockManager;
+@@ -4112,6 +4113,13 @@
+   Result := True;
+ end;
+ 
++// DaThoX begin
++function TDockManager.GetChildSite: TWinControl;
++begin
++  Result := nil;
++end;
++// DaThoX end
++
+ constructor TDockManager.Create(ADockSite: TWinControl);
+ begin
+   inherited Create;
+Index: lcl/include/wincontrol.inc
+===================================================================
+--- lcl/include/wincontrol.inc	(revision 48023)
++++ lcl/include/wincontrol.inc	(working copy)
+@@ -3165,7 +3165,9 @@
+     ParentClientWidth:=r.Right;
+     ParentClientHeight:=r.Bottom;
+ 
+-    if NeedAlignWork then
++    // DaThoX
++    //if NeedAlignWork then
++    // DaThoX
+     begin
+       //DebugLn(['TWinControl.AlignControls  ',DbgSName(Self),' RemainingClientRect=',dbgs(RemainingClientRect),' ',dbgs(ClientRect)]);
+       RemainingBorderSpace:=Rect(0,0,0,0);
+Index: lcl/interfaces/win32/win32callback.inc
+===================================================================
+--- lcl/interfaces/win32/win32callback.inc	(revision 48023)
++++ lcl/interfaces/win32/win32callback.inc	(working copy)
+@@ -2638,6 +2638,7 @@
+   Owner: TWinControl;
+   Control: TControl;
+   P: TPoint;
++  LRect: Windows.RECT; // DaThoX
+ begin
+   case Msg of
+     WM_ERASEBKGND:
+@@ -2682,6 +2683,17 @@
+       // free our own data associated with window
+       DisposeWindowInfo(Window);
+     end;
++	// DaThoX begin
++    WM_MOVE:
++    begin
++      if (Int16(LoWord(LParam)) <> 0) or (Int16(HiWord(LParam)) <> 0) then
++      begin
++        Parent := Windows.GetParent(Window);
++        Windows.GetClientRect(Parent, LRect);
++        Windows.SetWindowPos(Window, HWND_TOP, 0, 0, LRect.Right, LRect.Bottom, 0);
++      end;
++    end;
++    // DaThoX end
+   else
+     if UnicodeEnabledOS
+     then Result := Windows.DefWindowProcW(Window, Msg, WParam, LParam)
